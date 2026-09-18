@@ -39,7 +39,7 @@
   position: relative;
 }
 
-/* PISTA CON BORDES DE COLOR #CE3C35 Y FONDO DEGRADADO */
+/* PISTA CON BORDES EN COLOR #CE3C35 Y FONDO DEGRADADO */
 .track {
   position: relative;
   display: flex;
@@ -89,12 +89,11 @@
   box-sizing: border-box;
 }
 
-/* NÚMERO 8 EN FORMA DE ROMBO TRANSPARENTE CON BORDE #CE3C35 */
+/* NÚMERO 8 CENTRAL SOLO TEXTO (SIN ROMBO NI BORDES) */
 .node.center-goal {
-  position: relative;
   width: 80px;
   height: 80px;
-  background: transparent; /* Sin relleno */
+  background: transparent;
   color: #CE3C35;
   font-size: 42px;
   margin: 0 20px;
@@ -103,21 +102,7 @@
   align-items: center;
 }
 
-/* DIBUJO DEL BORDE DEL ROMBO */
-.node.center-goal::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  border: 3px solid #CE3C35;
-  box-sizing: border-box;
-  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
-  pointer-events: none;
-}
-
-/* FICHAS (BADGES) SIN BORDE CON SOMBRA DE COLOR */
+/* FICHAS (BADGES) */
 .p-token {
   position: absolute;
   top: 0;
@@ -127,7 +112,7 @@
   width: 70px;
   height: 70px;
   border-radius: 50%;
-  border: none !important; /* Sin borde */
+  border: none !important;
   z-index: 10;
   transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), width 0.3s, height 0.3s;
   background-size: contain;
@@ -139,21 +124,21 @@
 
 #token-p1 {
   background-image: url('faccion1.png');
-  box-shadow: 0 0 16px rgba(239, 68, 68, 0.9); /* Sombra roja J1 */
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.9);
 }
 
 #token-p2 {
-  background-image: url('faccion2.png');
-  box-shadow: 0 0 16px rgba(59, 130, 246, 0.9); /* Sombra azul J2 */
+  background-image: url('faccion1.png');
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.9);
 }
 
-/* ESCALADO MAYOR (100PX) AL LLEGAR AL NÚMERO 8 */
+/* AGRANDAR A 100PX EN EL NÚMERO 8 */
 .p-token.is-goal {
   width: 100px !important;
   height: 100px !important;
 }
 
-/* VISTA CONTROLADOR (TELÉFONO) */
+/* VISTA CONTROLADOR */
 #controller-container {
   display: none;
   height: 100vh;
@@ -321,13 +306,17 @@ button {
   const track = document.getElementById('track');
   let targetNode;
 
+  // Definir tamaño esperado según la casilla objetivo antes de medir
+  const tokenW = (value === 8) ? 100 : 70;
+  const tokenH = (value === 8) ? 100 : 70;
+
   if (value === 8) {
     targetNode = document.getElementById('goal-node');
-    token.classList.add('is-goal'); // Agranda la badge a 100px
+    token.classList.add('is-goal');
   } else {
     const container = document.getElementById(containerId);
     targetNode = container.querySelector(`[data-val="${value}"]`);
-    token.classList.remove('is-goal'); // Restablece a 70px
+    token.classList.remove('is-goal');
   }
 
   if (targetNode && track) {
@@ -341,10 +330,7 @@ button {
     const nodeCenterX = nodeRect.left + (nodeRect.width / 2);
     const nodeCenterY = nodeRect.top + (nodeRect.height / 2);
 
-    // Mide dinámicamente el tamaño (70px o 100px si está en la meta)
-    const tokenW = token.offsetWidth;
-    const tokenH = token.offsetHeight;
-
+    // Usa las dimensiones directas independientemente de las animaciones CSS
     const exactX = nodeCenterX - trackRect.left - borderLeft - (tokenW / 2);
     const exactY = nodeCenterY - trackRect.top - borderTop - (tokenH / 2);
 
