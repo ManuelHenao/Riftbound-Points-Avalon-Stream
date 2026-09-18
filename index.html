@@ -56,7 +56,10 @@
       ) 1;
 
       box-sizing: border-box;
-      animation: scaleXExpand 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+
+      /* Inicialmente transparente e invisible para evitar que parpadee completa antes de animar */
+      opacity: 0;
+      transform: scaleX(0);
     }
 
     /* ANIMACIÓN: Pista se abre desde el centro */
@@ -352,17 +355,17 @@
     function playOpeningAnimation() {
       const track = document.getElementById('track');
 
-      // 1. Forzar reinicio de la animación CSS de la pista (números)
+      // 1. Preparar las fichas en el centro ocultas
+      setInitialTokensAtCenter();
+
+      // 2. Reiniciar la animación de apertura de la pista desde opacidad 0 de forma limpia
       if (track) {
         track.style.animation = 'none';
         void track.offsetWidth; // Forzar reflow en el navegador
         track.style.animation = 'scaleXExpand 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards';
       }
 
-      // 2. Colocar badges en el centro
-      setInitialTokensAtCenter();
-
-      // 3. Esperar apertura (0.4s) antes de expandir/desplazar badges
+      // 3. Esperar apertura (0.4s) antes de desvelar y desplegar badges
       setTimeout(() => {
         ['token-p1', 'token-p2'].forEach((tokenId) => {
           const token = document.getElementById(tokenId);
