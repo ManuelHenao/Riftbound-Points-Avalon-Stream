@@ -3,420 +3,380 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Riftbound Score Track</title>
-  <!-- Librería PeerJS -->
-  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <title>Overlay Pista de Juego</title>
   <style>
     body {
-  margin: 0;
-  padding: 0;
-  background-color: transparent;
-  font-family: 'Arial Black', sans-serif;
-  overflow: hidden;
-  user-select: none;
-}
+      margin: 0;
+      padding: 0;
+      background-color: transparent;
+      font-family: 'Arial Black', sans-serif;
+      overflow: hidden;
+      user-select: none;
+    }
 
-#status-bar {
-  position: absolute;
-  top: 5px;
-  left: 5px;
-  font-family: sans-serif;
-  font-size: 12px;
-  color: #CE3C35;
-  background: rgba(15, 23, 42, 0.8);
-  padding: 4px 8px;
-  border-radius: 6px;
-  z-index: 100;
-}
+    #status-bar {
+      position: absolute;
+      top: 5px;
+      left: 5px;
+      font-family: sans-serif;
+      font-size: 12px;
+      color: #CE3C35;
+      background: rgba(15, 23, 42, 0.8);
+      padding: 4px 8px;
+      border-radius: 6px;
+      z-index: 100;
+    }
 
-/* OVERLAY UBICADO ARRIBA CON MARGEN */
-#overlay-container {
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  position: relative;
-}
+    /* OVERLAY UBICADO ARRIBA CON MARGEN */
+    #overlay-container {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      position: relative;
+    }
 
-/* PISTA CON BORDES EN COLOR #CE3C35 Y FONDO DEGRADADO */
-.track {
-  position: relative;
-  display: flex;
-  align-items: center;
-  margin-top: 30px;
-  padding: 10px 40px;
-  
-  background: linear-gradient(
-    90deg, 
-    rgba(0, 0, 0, 0) 0%, 
-    rgba(0, 0, 0, 0.7) 25%, 
-    rgba(0, 0, 0, 0.7) 75%, 
-    rgba(0, 0, 0, 0) 100%
-  );
+    /* PISTA CON BORDES DE COLOR #CE3C35 Y FONDO DEGRADADO */
+    .track {
+      position: relative;
+      display: flex;
+      align-items: center;
+      margin-top: 30px;
+      padding: 10px 40px;
+      
+      background: linear-gradient(
+        90deg, 
+        rgba(0, 0, 0, 0) 0%, 
+        rgba(0, 0, 0, 0.7) 25%, 
+        rgba(0, 0, 0, 0.7) 75%, 
+        rgba(0, 0, 0, 0) 100%
+      );
 
-  border-top: 3px solid transparent;
-  border-bottom: 3px solid transparent;
-  border-left: none;
-  border-right: none;
+      border-top: 3px solid transparent;
+      border-bottom: 3px solid transparent;
+      border-left: none;
+      border-right: none;
 
-  border-image: linear-gradient(
-    90deg, 
-    rgba(206, 60, 53, 0) 0%, 
-    rgba(206, 60, 53, 0.9) 30%, 
-    rgba(206, 60, 53, 0.9) 70%, 
-    rgba(206, 60, 53, 0) 100%
-  ) 1;
+      border-image: linear-gradient(
+        90deg, 
+        rgba(206, 60, 53, 0) 0%, 
+        rgba(206, 60, 53, 0.9) 30%, 
+        rgba(206, 60, 53, 0.9) 70%, 
+        rgba(206, 60, 53, 0) 100%
+      ) 1;
 
-  box-sizing: border-box;
-}
+      box-sizing: border-box;
 
-.side { 
-  display: flex; 
-  gap: 15px; 
-}
+      /* ORIGEN DE TRANSFORMACIÓN EN EL CENTRO PARA LA ANIMACIÓN */
+      transform-origin: center center;
+      animation: expandFromCenter 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
 
-/* NODOS / NÚMEROS NORMALES */
-.node {
-  width: 50px;
-  height: 50px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 24px;
-  color: #94a3b8;
-  font-weight: bold;
-  box-sizing: border-box;
-}
+    /* REGLA PARA REINICIAR LA ANIMACIÓN VÍA JS */
+    .track.animate-in {
+      animation: none;
+      animation: expandFromCenter 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
 
-/* NÚMERO 8 CENTRAL SOLO TEXTO (SIN ROMBO NI BORDES) */
-.node.center-goal {
-  width: 80px;
-  height: 80px;
-  background: transparent;
-  color: #CE3C35;
-  font-size: 42px;
-  margin: 0 20px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
+    /* ANIMACIÓN: EXPANSIÓN DESDE EL CENTRO HACIA LOS EXTREMOS */
+    @keyframes expandFromCenter {
+      0% {
+        opacity: 0;
+        transform: scaleX(0);
+      }
+      100% {
+        opacity: 1;
+        transform: scaleX(1);
+      }
+    }
 
-/* FICHAS (BADGES) */
-.p-token {
-  position: absolute;
-  top: 0;
-  left: 0;
-  margin: 0 !important;
-  padding: 0 !important;
-  width: 70px;
-  height: 70px;
-  border-radius: 50%;
-  border: none !important;
-  z-index: 10;
-  transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), width 0.3s, height 0.3s;
-  background-size: contain;
-  background-position: center;
-  background-repeat: no-repeat;
-  pointer-events: none;
-  box-sizing: border-box;
-}
+    .side { 
+      display: flex; 
+      gap: 15px; 
+    }
 
-#token-p1 {
-  background-image: url('faccion1.png');
-  box-shadow: 0 0 16px rgba(239, 68, 68, 0.9);
-}
+    /* NODOS / NÚMEROS NORMALES */
+    .node {
+      width: 50px;
+      height: 50px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 24px;
+      color: #94a3b8;
+      font-weight: bold;
+      box-sizing: border-box;
+    }
 
-#token-p2 {
-  background-image: url('faccion1.png');
-  box-shadow: 0 0 16px rgba(59, 130, 246, 0.9);
-}
+    /* NÚMERO 8 CENTRAL (SOLO TEXTO CON SU COLOR) */
+    .node.center-goal {
+      width: 80px;
+      height: 80px;
+      background: transparent;
+      color: #CE3C35;
+      font-size: 42px;
+      margin: 0 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
 
-/* AGRANDAR A 100PX EN EL NÚMERO 8 */
-.p-token.is-goal {
-  width: 100px !important;
-  height: 100px !important;
-}
+    /* FICHAS (BADGES) SIN BORDE CON SOMBRA DE COLOR */
+    .p-token {
+      position: absolute;
+      top: 0;
+      left: 0;
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      border: none !important;
+      z-index: 10;
+      transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), width 0.3s, height 0.3s;
+      background-size: contain;
+      background-position: center;
+      background-repeat: no-repeat;
+      pointer-events: none;
+      box-sizing: border-box;
+    }
 
-/* VISTA CONTROLADOR */
-#controller-container {
-  display: none;
-  height: 100vh;
-  background: #0f172a;
-  color: white;
-  flex-direction: column;
-  justify-content: space-around;
-  align-items: center;
-  padding: 20px;
-  box-sizing: border-box;
-}
+    #token-p1 {
+      background-image: url('faccion1.png');
+      box-shadow: 0 0 16px rgba(239, 68, 68, 0.9);
+    }
 
-.p-control {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-}
+    #token-p2 {
+      background-image: url('faccion1.png');
+      box-shadow: 0 0 16px rgba(59, 130, 246, 0.9);
+    }
 
-.btn-group { display: flex; gap: 20px; }
+    /* ESCALADO A 100PX AL LLEGAR AL NÚMERO 8 */
+    .p-token.is-goal {
+      width: 100px !important;
+      height: 100px !important;
+    }
 
-button {
-  width: 80px;
-  height: 80px;
-  font-size: 36px;
-  font-weight: bold;
-  border: none;
-  border-radius: 15px;
-  color: white;
-  cursor: pointer;
-}
+    /* VISTA CONTROLADOR (MÓVIL) */
+    #controller-container {
+      display: none;
+      height: 100vh;
+      background: #0f172a;
+      color: white;
+      flex-direction: column;
+      justify-content: space-around;
+      align-items: center;
+      padding: 20px;
+      box-sizing: border-box;
+    }
 
-.btn-p1 { background: #ef4444; }
-.btn-p2 { background: #3b82f6; }
-.score-disp { font-size: 48px; font-weight: bold; }
+    .p-control {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+    }
 
-/* PISTA BASE */
-.track {
-  position: relative;
-  display: flex;
-  align-items: center;
-  margin-top: 30px;
-  padding: 10px 40px;
-  
-  background: linear-gradient(
-    90deg, 
-    rgba(0, 0, 0, 0) 0%, 
-    rgba(0, 0, 0, 0.7) 25%, 
-    rgba(0, 0, 0, 0.7) 75%, 
-    rgba(0, 0, 0, 0) 100%
-  );
+    .btn-group { display: flex; gap: 20px; }
 
-  border-top: 3px solid transparent;
-  border-bottom: 3px solid transparent;
-  border-left: none;
-  border-right: none;
+    button {
+      width: 80px;
+      height: 80px;
+      font-size: 36px;
+      font-weight: bold;
+      border: none;
+      border-radius: 15px;
+      color: white;
+      cursor: pointer;
+    }
 
-  border-image: linear-gradient(
-    90deg, 
-    rgba(206, 60, 53, 0) 0%, 
-    rgba(206, 60, 53, 0.9) 30%, 
-    rgba(206, 60, 53, 0.9) 70%, 
-    rgba(206, 60, 53, 0) 100%
-  ) 1;
-
-  box-sizing: border-box;
-
-  /* Animación de entrada inicial */
-  animation: slideDownFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-/* REGLA PARA REINICIAR ANIMACIÓN CON JS */
-.track.animate-in {
-  animation: none;
-  /* Fuerza el 'reflow' del navegador */
-  animation: slideDownFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-/* ANIMACIÓN: Desciende suavemente desde arriba y aparece */
-@keyframes slideDownFade {
-  0% {
-    opacity: 0;
-    transform: translateY(-30px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}    
+    .btn-p1 { background: #ef4444; }
+    .btn-p2 { background: #3b82f6; }
+    .score-disp { font-size: 48px; font-weight: bold; }
   </style>
 </head>
 <body>
 
   <div id="status-bar">Conectando...</div>
 
-  <!-- OVERLAY (OBS) -->
+  <!-- VISTA OVERLAY (OBS) -->
   <div id="overlay-container">
     <div class="track" id="track">
-      <div class="side" id="p1-nodes">
-        <div class="node" data-val="0">0</div>
-        <div class="node" data-val="1">1</div>
-        <div class="node" data-val="2">2</div>
-        <div class="node" data-val="3">3</div>
-        <div class="node" data-val="4">4</div>
-        <div class="node" data-val="5">5</div>
-        <div class="node" data-val="6">6</div>
-        <div class="node" data-val="7">7</div>
-      </div>
-
-      <div class="node center-goal" id="goal-node" data-val="8">8</div>
-
-      <div class="side" id="p2-nodes">
-        <div class="node" data-val="7">7</div>
-        <div class="node" data-val="6">6</div>
-        <div class="node" data-val="5">5</div>
-        <div class="node" data-val="4">4</div>
-        <div class="node" data-val="3">3</div>
-        <div class="node" data-val="2">2</div>
-        <div class="node" data-val="1">1</div>
-        <div class="node" data-val="0">0</div>
-      </div>
-
+      <!-- FICHAS JUGADORES -->
       <div id="token-p1" class="p-token"></div>
       <div id="token-p2" class="p-token"></div>
+
+      <!-- LADO JUGADOR 1 (0 A 7) -->
+      <div class="side" id="p1-side">
+        <div class="node" data-val="0">0</div>
+        <div class="node" data-val="1">1</div>
+        <div class="node" data-val="2">2</div>
+        <div class="node" data-val="3">3</div>
+        <div class="node" data-val="4">4</div>
+        <div class="node" data-val="5">5</div>
+        <div class="node" data-val="6">6</div>
+        <div class="node" data-val="7">7</div>
+      </div>
+
+      <!-- CENTRO (NÚMERO 8) -->
+      <div class="node center-goal" id="goal-node" data-val="8">8</div>
+
+      <!-- LADO JUGADOR 2 (7 A 0) -->
+      <div class="side" id="p2-side">
+        <div class="node" data-val="7">7</div>
+        <div class="node" data-val="6">6</div>
+        <div class="node" data-val="5">5</div>
+        <div class="node" data-val="4">4</div>
+        <div class="node" data-val="3">3</div>
+        <div class="node" data-val="2">2</div>
+        <div class="node" data-val="1">1</div>
+        <div class="node" data-val="0">0</div>
+      </div>
     </div>
   </div>
 
-  <!-- CONTROLADOR (TELÉFONO) -->
+  <!-- VISTA CONTROLADOR -->
   <div id="controller-container">
     <div class="p-control">
-      <h2 style="color: #ef4444; margin:0;">JUGADOR 1</h2>
-      <div class="score-disp" id="p1-score-txt">0</div>
+      <h2 style="color: #ef4444; margin: 0;">JUGADOR 1</h2>
       <div class="btn-group">
         <button class="btn-p1" onclick="changeScore(1, -1)">-</button>
         <button class="btn-p1" onclick="changeScore(1, 1)">+</button>
       </div>
+      <div id="disp-p1" class="score-disp">0</div>
     </div>
 
-    <hr style="width: 100%; border-color: #334155;">
+    <hr style="width: 80%; border-color: #334155;">
 
     <div class="p-control">
-      <h2 style="color: #3b82f6; margin:0;">JUGADOR 2</h2>
-      <div class="score-disp" id="p2-score-txt">0</div>
+      <h2 style="color: #3b82f6; margin: 0;">JUGADOR 2</h2>
       <div class="btn-group">
         <button class="btn-p2" onclick="changeScore(2, -1)">-</button>
         <button class="btn-p2" onclick="changeScore(2, 1)">+</button>
       </div>
+      <div id="disp-p2" class="score-disp">0</div>
     </div>
   </div>
 
   <script>
-    let state = { p1: 0, p2: 0 };
-    const urlParams = new URLSearchParams(window.location.search);
-    const room = urlParams.get('room') || 'riftbound-123';
-    const isControl = urlParams.has('control');
-    const statusBar = document.getElementById('status-bar');
+    // ESTADO
+    let p1Score = 0;
+    let p2Score = 0;
 
-    if (isControl) {
+    // DETECCIÓN DE RUTA PARA MODO CONTROLADOR (#controller)
+    const isController = window.location.hash === '#controller';
+
+    if (isController) {
       document.getElementById('overlay-container').style.display = 'none';
       document.getElementById('controller-container').style.display = 'flex';
+      document.getElementById('status-bar').style.display = 'none';
     }
 
-    let peer, conn;
+    // BROADCAST CHANNEL PARA SINCRONIZACIÓN
+    const channel = new BroadcastChannel('game_track_channel');
 
-    if (isControl) {
-      peer = new Peer();
-      peer.on('open', () => {
-        statusBar.innerText = "Conectando...";
-        conn = peer.connect('obs-' + room);
-        conn.on('open', () => {
-          statusBar.innerText = "Conectado por Internet";
-          statusBar.style.color = "#4ade80";
-        });
-      });
-    } else {
-      peer = new Peer('obs-' + room);
-      peer.on('open', () => {
-        statusBar.innerText = "OBS Listo. Esperando al celular...";
-      });
-
-      peer.on('connection', (c) => {
-        conn = c;
-        statusBar.innerText = "Celular conectado";
-        statusBar.style.color = "#4ade80";
-        conn.on('data', (data) => {
-          state = data;
-          updateUI();
-        });
-      });
-    }
+    channel.onmessage = (event) => {
+      const data = event.data;
+      if (data.type === 'UPDATE_SCORES') {
+        p1Score = data.p1;
+        p2Score = data.p2;
+        updateUI();
+      }
+    };
 
     function changeScore(player, delta) {
       if (player === 1) {
-        state.p1 = Math.min(8, Math.max(0, state.p1 + delta));
-      } else {
-        state.p2 = Math.min(8, Math.max(0, state.p2 + delta));
+        p1Score = Math.min(Math.max(p1Score + delta, 0), 8);
+      } else if (player === 2) {
+        p2Score = Math.min(Math.max(p2Score + delta, 0), 8);
       }
+      
+      channel.postMessage({
+        type: 'UPDATE_SCORES',
+        p1: p1Score,
+        p2: p2Score
+      });
 
-      if (conn && conn.open) {
-        conn.send(state);
-      }
       updateUI();
     }
 
     function updateUI() {
-      if (isControl) {
-        document.getElementById('p1-score-txt').innerText = state.p1;
-        document.getElementById('p2-score-txt').innerText = state.p2;
-        return;
+      if (isController) {
+        document.getElementById('disp-p1').textContent = p1Score;
+        document.getElementById('disp-p2').textContent = p2Score;
+      } else {
+        moveTokenCentered('token-p1', 'p1-side', p1Score);
+        moveTokenCentered('token-p2', 'p2-side', p2Score);
+      }
+    }
+
+    // CÁLCULO Y CENTRADO DE FICHAS
+    function moveTokenCentered(tokenId, containerId, value) {
+      const token = document.getElementById(tokenId);
+      const track = document.getElementById('track');
+      let targetNode;
+
+      // Definir dinámicamente el tamaño matemáticamente antes de calcular la posición
+      const tokenW = (value === 8) ? 100 : 70;
+      const tokenH = (value === 8) ? 100 : 70;
+
+      if (value === 8) {
+        targetNode = document.getElementById('goal-node');
+        token.classList.add('is-goal');
+      } else {
+        const container = document.getElementById(containerId);
+        targetNode = container.querySelector(`[data-val="${value}"]`);
+        token.classList.remove('is-goal');
       }
 
-      moveTokenCentered('token-p1', 'p1-nodes', state.p1);
-      moveTokenCentered('token-p2', 'p2-nodes', state.p2);
+      if (targetNode && track) {
+        const trackRect = track.getBoundingClientRect();
+        const nodeRect = targetNode.getBoundingClientRect();
+
+        const trackStyle = window.getComputedStyle(track);
+        const borderLeft = parseFloat(trackStyle.borderLeftWidth) || 0;
+        const borderTop = parseFloat(trackStyle.borderTopWidth) || 0;
+
+        const nodeCenterX = nodeRect.left + (nodeRect.width / 2);
+        const nodeCenterY = nodeRect.top + (nodeRect.height / 2);
+
+        const exactX = nodeCenterX - trackRect.left - borderLeft - (tokenW / 2);
+        const exactY = nodeCenterY - trackRect.top - borderTop - (tokenH / 2);
+
+        token.style.transform = `translate3d(${exactX}px, ${exactY}px, 0)`;
+      }
     }
 
-    function moveTokenCentered(tokenId, containerId, value) {
-  const token = document.getElementById(tokenId);
-  const track = document.getElementById('track');
-  let targetNode;
+    // EVENTO DE VISIBILIDAD PARA OBS STUDIO
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        const track = document.getElementById('track');
+        
+        if (track) {
+          track.classList.remove('animate-in');
+          void track.offsetWidth; // Forzar reflow en CSS
+          track.classList.add('animate-in');
+        }
 
-  // Definir tamaño esperado según la casilla objetivo antes de medir
-  const tokenW = (value === 8) ? 100 : 70;
-  const tokenH = (value === 8) ? 100 : 70;
-
-  if (value === 8) {
-    targetNode = document.getElementById('goal-node');
-    token.classList.add('is-goal');
-  } else {
-    const container = document.getElementById(containerId);
-    targetNode = container.querySelector(`[data-val="${value}"]`);
-    token.classList.remove('is-goal');
-  }
-
-  if (targetNode && track) {
-    const trackRect = track.getBoundingClientRect();
-    const nodeRect = targetNode.getBoundingClientRect();
-
-    const trackStyle = window.getComputedStyle(track);
-    const borderLeft = parseFloat(trackStyle.borderLeftWidth) || 0;
-    const borderTop = parseFloat(trackStyle.borderTopWidth) || 0;
-
-    const nodeCenterX = nodeRect.left + (nodeRect.width / 2);
-    const nodeCenterY = nodeRect.top + (nodeRect.height / 2);
-
-    // Usa las dimensiones directas independientemente de las animaciones CSS
-    const exactX = nodeCenterX - trackRect.left - borderLeft - (tokenW / 2);
-    const exactY = nodeCenterY - trackRect.top - borderTop - (tokenH / 2);
-
-    token.style.transform = `translate3d(${exactX}px, ${exactY}px, 0)`;
-  }
-}
-
-    // Asegurar centrado al cargar todo y al cambiar tamaño
-    window.addEventListener('load', () => {
-      setTimeout(updateUI, 100);
+        // Re-centra las fichas exactas al finalizar la animación
+        setTimeout(() => {
+          updateUI();
+        }, 600);
+      }
     });
-    window.addEventListener('resize', updateUI);
-    
-    // Detección de visibilidad en OBS Studio
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) {
-    const track = document.getElementById('track');
-    
-    if (track) {
-      // Reinicia la animación eliminando y reasignando la clase
-      track.classList.remove('animate-in');
-      void track.offsetWidth; // Dispara un reflow en CSS
-      track.classList.add('animate-in');
-    }
 
-    // Recalcula la posición de las fichas para asegurar centrado tras la animación
-    setTimeout(() => {
-      if (typeof p1Score !== 'undefined') moveTokenCentered('token-p1', 'p1-side', p1Score);
-      if (typeof p2Score !== 'undefined') moveTokenCentered('token-p2', 'p2-side', p2Score);
-    }, 50);
-  }
-});
+    // INICIALIZACIÓN
+    window.addEventListener('load', () => {
+      const statusBar = document.getElementById('status-bar');
+      if (statusBar) statusBar.textContent = 'Listo';
+      updateUI();
+    });
+
+    window.addEventListener('resize', () => {
+      if (!isController) updateUI();
+    });
   </script>
 </body>
 </html>
