@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Riftbound Score Track</title>
 
-  <!-- Meta tags para modo PWA / Web App (Ocultar barra de búsqueda al añadir a pantalla de inicio) -->
+  <!-- Meta tags para modo PWA / Web App -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -23,7 +23,7 @@
       user-select: none;
     }
 
-    /* OVERLAY UBICADO ARRIBA CON MARGEN */
+    /* OVERLAY UBICADO ARRIBA COMPLETAMENTE PEGADO */
     #overlay-container {
       width: 100vw;
       height: 100vh;
@@ -33,13 +33,14 @@
       position: relative;
     }
 
-    /* PISTA BASE */
+    /* PISTA BASE DE 50PX DE ALTURA TOTAL CON BORDE INFERIOR */
     .track {
       position: relative;
       display: flex;
       align-items: center;
-      margin-top: 30px;
-      padding: 10px 40px;
+      margin-top: 0;
+      padding: 0 30px;
+      height: 50px;
 
       /* Degradado: 0% en extremos, 90% en el centro */
       background: linear-gradient(
@@ -50,10 +51,10 @@
         rgba(0, 0, 0, 0) 100%
       );
 
-      border-top: 3px solid transparent;
-      border-bottom: 3px solid transparent;
+      border-top: none;
       border-left: none;
       border-right: none;
+      border-bottom: 3px solid transparent;
 
       border-image: linear-gradient(
         90deg, 
@@ -86,56 +87,63 @@
 
     .side { 
       display: flex; 
-      gap: 15px; 
+      gap: 10px; 
     }
 
-    /* NODOS / NÚMEROS NORMALES (0 AL 7) */
+    /* NODOS / NÚMEROS NORMALES (0 AL 7) CON CÍRCULO DELINEADO */
     .node {
-      width: 50px;
-      height: 50px;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 2px solid rgba(206, 60, 53, 0.9);
+      background: transparent;
       display: flex;
       justify-content: center;
       align-items: center;
-      font-size: 32px; /* Números más grandes */
-      color: #ffffff; /* Texto blanco */
-      font-weight: 900; /* Extra BOLD */
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9); /* Sombra negra marcada */
+      font-size: 20px;
+      color: #ffffff;
+      font-weight: 900;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9);
       position: relative;
-      z-index: 2; /* Por delante */
+      z-index: 2;
       box-sizing: border-box;
     }
 
-    /* NÚMERO 8 CENTRAL (BLANCO POR DEFECTO, ROJO AL CONECTAR) */
+    /* NÚMERO 8 CENTRAL (MÁS GRANDE CON BORDE DE 4PX) */
     .node.center-goal {
-      width: 80px;
-      height: 80px;
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      border: 4px solid rgba(206, 60, 53, 0.9);
       background: transparent;
       color: #ffffff;
-      font-size: 52px; /* Más grande manteniendo proporción */
+      font-size: 28px;
       font-weight: 900;
       text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.9);
-      margin: 0 20px;
+      margin: 0 15px;
       display: flex;
       justify-content: center;
       align-items: center;
       position: relative;
       z-index: 2;
-      transition: color 0.4s ease;
+      transition: color 0.4s ease, border-color 0.4s ease;
+      box-sizing: border-box;
     }
 
     .node.center-goal.connected {
       color: #CE3C35;
+      border-color: #CE3C35;
     }
 
-    /* FICHAS (BADGES) */
+    /* FICHAS (BADGES) REESCALADAS PARA LA NUEVA ALTURA */
     .p-token {
       position: absolute;
       top: 0;
       left: 0;
       margin: 0 !important;
       padding: 0 !important;
-      width: 70px;
-      height: 70px;
+      width: 42px;
+      height: 42px;
       border-radius: 50%;
       border: none !important;
       z-index: 10;
@@ -146,7 +154,6 @@
       box-sizing: border-box;
       opacity: 0;
 
-      /* Transición suave para desplazamiento e incremento de tamaño */
       transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease, width 0.3s, height 0.3s;
     }
 
@@ -156,17 +163,17 @@
 
     #token-p1 {
       background-image: url('faccion1.png');
-      box-shadow: 0 0 16px rgba(239, 68, 68, 0.9);
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.9);
     }
 
     #token-p2 {
       background-image: url('faccion1.png');
-      box-shadow: 0 0 16px rgba(59, 130, 246, 0.9);
+      box-shadow: 0 0 12px rgba(59, 130, 246, 0.9);
     }
 
     .p-token.is-goal {
-      width: 100px !important;
-      height: 100px !important;
+      width: 54px !important;
+      height: 54px !important;
     }
 
     /* VISTA CONTROLADOR */
@@ -380,8 +387,8 @@
       const track = document.getElementById('track');
       let targetNode;
 
-      const tokenW = (value === 8) ? 100 : 70;
-      const tokenH = (value === 8) ? 100 : 70;
+      const tokenW = (value === 8) ? 54 : 42;
+      const tokenH = (value === 8) ? 54 : 42;
 
       if (value === 8) {
         targetNode = document.getElementById('goal-node');
@@ -408,8 +415,8 @@
       ['token-p1', 'token-p2'].forEach((tokenId) => {
         const token = document.getElementById(tokenId);
         if (goalNode && track && token) {
-          const initialX = goalNode.offsetLeft + (goalNode.offsetWidth / 2) - 35;
-          const initialY = goalNode.offsetTop + (goalNode.offsetHeight / 2) - 35;
+          const initialX = goalNode.offsetLeft + (goalNode.offsetWidth / 2) - 21;
+          const initialY = goalNode.offsetTop + (goalNode.offsetHeight / 2) - 21;
 
           token.style.transition = 'none';
           token.classList.remove('visible');
@@ -421,7 +428,6 @@
     function playOpeningAnimation() {
       setInitialTokensAtCenter();
 
-      // Esperar a que la barra complete su apertura (0.4s) antes de desvelar y mover fichas
       setTimeout(() => {
         ['token-p1', 'token-p2'].forEach((tokenId) => {
           const token = document.getElementById(tokenId);
