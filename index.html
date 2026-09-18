@@ -22,32 +22,32 @@
   left: 5px;
   font-family: sans-serif;
   font-size: 12px;
-  color: #38bdf8;
+  color: #CE3C35;
   background: rgba(15, 23, 42, 0.8);
   padding: 4px 8px;
   border-radius: 6px;
   z-index: 100;
 }
 
-/* 1. OVERLAY UBICADO ARRIBA CON MARGEN */
+/* OVERLAY UBICADO ARRIBA CON MARGEN */
 #overlay-container {
   width: 100vw;
   height: 100vh;
   display: flex;
   justify-content: center;
-  align-items: flex-start; /* Alinea el marcador arriba */
+  align-items: flex-start;
   position: relative;
 }
 
-/* 2. PISTA CON FONDO Y BORDES EN GRADIENTE DEGRADADO */
+/* PISTA CON BORDES DE COLOR #CE3C35 Y FONDO DEGRADADO */
 .track {
   position: relative;
   display: flex;
   align-items: center;
-  margin-top: 30px; /* Espacio desde el borde superior de la pantalla */
+  margin-top: 30px;
   padding: 10px 40px;
   
-  /* Fondo negro con degradado de opacidad: 0% en extremos, 70% al centro */
+  /* Fondo negro con degradado de opacidad */
   background: linear-gradient(
     90deg, 
     rgba(0, 0, 0, 0) 0%, 
@@ -56,19 +56,18 @@
     rgba(0, 0, 0, 0) 100%
   );
 
-  /* Solo bordes arriba y abajo */
+  /* Bordes superior e inferior con degradado en el color #CE3C35 */
   border-top: 3px solid transparent;
   border-bottom: 3px solid transparent;
   border-left: none;
   border-right: none;
 
-  /* Aplica degradado cian a los bordes superior e inferior */
   border-image: linear-gradient(
     90deg, 
-    rgba(56, 189, 248, 0) 0%, 
-    rgba(56, 189, 248, 0.8) 30%, 
-    rgba(56, 189, 248, 0.8) 70%, 
-    rgba(56, 189, 248, 0) 100%
+    rgba(206, 60, 53, 0) 0%, 
+    rgba(206, 60, 53, 0.9) 30%, 
+    rgba(206, 60, 53, 0.9) 70%, 
+    rgba(206, 60, 53, 0) 100%
   ) 1;
 
   box-sizing: border-box;
@@ -92,17 +91,21 @@
   box-sizing: border-box;
 }
 
-/* 3. NÚMERO 8 CENTRAL MÁS GRANDE */
+/* NÚMERO 8 EN FORMA DE ROMBO Y COLOR #CE3C35 */
 .node.center-goal {
-  width: 80px;         /* Aumentado de 65px a 80px */
-  height: 80px;        /* Aumentado de 65px a 80px */
-  background: rgba(234, 179, 8, 0.2);
-  border: 3px solid #eab308;
-  color: #eab308;
-  border-radius: 50%;
-  font-size: 42px;     /* Aumentado de 32px a 42px */
-  box-shadow: 0 0 20px rgba(234, 179, 8, 0.5);
+  width: 80px;
+  height: 80px;
+  background: rgba(206, 60, 53, 0.25);
+  color: #CE3C35;
+  font-size: 42px;
   margin: 0 20px;
+  
+  /* Corte en forma de Rombo */
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  border-radius: 0; /* Desactiva el círculo anterior */
+  
+  /* Sombra simulada para el corte del rombo */
+  filter: drop-shadow(0 0 10px rgba(206, 60, 53, 0.7));
 }
 
 /* FICHAS DE 70PX CON CENTRADO */
