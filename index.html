@@ -47,6 +47,7 @@
       border-radius: 50px;
       padding: 10px 20px;
       box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+      box-sizing: border-box;
     }
 
     .side { display: flex; gap: 15px; }
@@ -81,6 +82,7 @@
       position: absolute;
       top: 0;
       left: 0;
+      margin: 0; /* Obligatorio para evitar desfasamientos */
       width: 70px;
       height: 70px;
       border-radius: 50%;
@@ -274,6 +276,7 @@ function moveTokenCentered(tokenId, containerId, value) {
   const track = document.getElementById('track');
   let targetNode;
 
+  // 1. Obtener el número objetivo (0-7 o el 8 central)
   if (value === 8) {
     targetNode = document.getElementById('goal-node');
   } else {
@@ -282,23 +285,20 @@ function moveTokenCentered(tokenId, containerId, value) {
   }
 
   if (targetNode && track) {
-    // Posición del marco principal y del nodo objetivo
+    // 2. Obtener el centro del nodo y la pista
     const trackRect = track.getBoundingClientRect();
     const nodeRect = targetNode.getBoundingClientRect();
 
-    // Centro del nodo en coordenadas absolutas
-    const nodeCenterX = nodeRect.left + (nodeRect.width / 2);
-    const nodeCenterY = nodeRect.top + (nodeRect.height / 2);
-
-    // Tamaño de la ficha
+    // 3. Ancho/Alto real de la ficha (si no se ha renderizado, se asume 50)
     const tokenWidth = token.offsetWidth || 50;
     const tokenHeight = token.offsetHeight || 50;
 
-    // Distancia relativa exacta desde el origen de la pista (#track)
-    const exactLeft = nodeCenterX - trackRect.left - (tokenWidth / 2);
-    const exactTop = nodeCenterY - trackRect.top - (tokenHeight / 2);
+    // 4. Calcular el centro del nodo relativo al marco superior-izquierdo de la pista
+    const x = (nodeRect.left - trackRect.left) + (nodeRect.width / 2) - (tokenWidth / 2);
+    const y = (nodeRect.top - trackRect.top) + (nodeRect.height / 2) - (tokenHeight / 2);
 
-    token.style.transform = `translate3d(${exactLeft}px, ${exactTop}px, 0)`;
+    // 5. Mover la ficha al centro geométrico exacto
+    token.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`;
   }
 }
 
