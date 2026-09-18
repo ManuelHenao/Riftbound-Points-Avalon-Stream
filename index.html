@@ -251,30 +251,52 @@
   </div>
 
   <script>
-    let state = { p1: 0, p2: 0 };
-    const urlParams = new URLSearchParams(window.location.search);
-    const room = urlParams.get('room') || 'riftbound-123';
-    const isControl = urlParams.has('control');
+    <script>
+  let state = { p1: 0, p2: 0 };
+  const urlParams = new URLSearchParams(window.location.search);
+  const room = urlParams.get('room') || 'riftbound-123';
+  const isControl = urlParams.has('control');
 
+  if (isControl) {
+    document.getElementById('overlay-container').style.display = 'none';
+    document.getElementById('controller-container').style.display = 'flex';
+  }
+
+  let peer = null;
+  let conn = null;
+
+  function initPeer() {
     if (isControl) {
-      document.getElementById('overlay-container').style.display = 'none';
-      document.getElementById('controller-container').style.display = 'flex';
-    }
-
-    let peer, conn;
-
-    if (isControl) {
+      // --- VISTA CONTROLADOR (TELÉFONO) ---
       peer = new Peer();
+
       peer.on('open', () => {
-        conn = peer.connect('obs-' + room);
+        connectToOBS();
       });
+
+      peer.on('error', (err) => {
+        console.warn('Error en PeerJS (Control):', err);
+        setTimeout(connectToOBS, 2000); // Reintentar si falla
+      });
+
     } else {
+      // --- VISTA OVERLAY (OBS) ---
+      // Usamos el ID fijo para que el teléfono siempre sepa a dónde conectar
       peer = new Peer('obs-' + room);
+
+      peer.on('open', (id) => {
+        console.log('OBS Peer listo con ID:', id);
+      });
 
       peer.on('connection', (c) => {
         conn = c;
         const goalNode = document.getElementById('goal-node');
         if (goalNode) goalNode.classList.add('connected');
+
+        // Enviar el estado actual al teléfono apenas se conecte
+        conn.on('open', () => {
+          conn.send(state);
+        });
 
         conn.on('data', (data) => {
           state = data;
@@ -284,112 +306,152 @@
         conn.on('close', () => {
           if (goalNode) goalNode.classList.remove('connected');
         });
+
+        conn.on('error', () => {
+          if (goalNode) goalNode.classList.remove('connected');
+        });
+      });
+
+      peer.on('error', (err) => {
+        console.warn('Error en PeerJS (OBS):', err);
+        // Si el ID ya está ocupado (por recargar rápido la fuente), destruimos y recreamos
+        if (err.type === 'unavailable-id') {
+          setTimeout(() => {
+            peer.destroy();
+            initPeer();
+          }, 1000);
+        }
       });
     }
+  }
 
-    function changeScore(player, delta) {
-      if (player === 1) {
-        state.p1 = Math.min(8, Math.max(0, state.p1 + delta));
-      } else {
-        state.p2 = Math.min(8, Math.max(0, state.p2 + delta));
-      }
+  // Función exclusiva del controlador para buscar a OBS activamente
+  function connectToOBS() {
+    if (!isControl || !peer || peer.destroyed) return;
 
-      if (conn && conn.open) {
-        conn.send(state);
-      }
-      updateUI();
+    if (conn) {
+      conn.close();
     }
 
-    function updateUI() {
-      if (isControl) {
-        document.getElementById('p1-score-txt').innerText = state.p1;
-        document.getElementById('p2-score-txt').innerText = state.p2;
-        return;
-      }
+    conn = peer.connect('obs-' + room, { reliable: true });
 
-      moveTokenCentered('token-p1', 'p1-nodes', state.p1);
-      moveTokenCentered('token-p2', 'p2-nodes', state.p2);
+    conn.on('open', () => {
+      console.log('Conectado con OBS con éxito');
+    });
+
+    conn.on('close', () => {
+      console.warn('Conexión perdida con OBS. Reintentando en 3s...');
+      setTimeout(connectToOBS, 3000);
+    });
+
+    conn.on('error', () => {
+      setTimeout(connectToOBS, 3000);
+    });
+  }
+
+  function changeScore(player, delta) {
+    if (player === 1) {
+      state.p1 = Math.min(8, Math.max(0, state.p1 + delta));
+    } else {
+      state.p2 = Math.min(8, Math.max(0, state.p2 + delta));
     }
 
-    function moveTokenCentered(tokenId, containerId, value) {
+    if (conn && conn.open) {
+      conn.send(state);
+    }
+    updateUI();
+  }
+
+  function updateUI() {
+    if (isControl) {
+      document.getElementById('p1-score-txt').innerText = state.p1;
+      document.getElementById('p2-score-txt').innerText = state.p2;
+      return;
+    }
+
+    moveTokenCentered('token-p1', 'p1-nodes', state.p1);
+    moveTokenCentered('token-p2', 'p2-nodes', state.p2);
+  }
+
+  function moveTokenCentered(tokenId, containerId, value) {
+    const token = document.getElementById(tokenId);
+    const track = document.getElementById('track');
+    let targetNode;
+
+    const tokenW = (value === 8) ? 100 : 70;
+    const tokenH = (value === 8) ? 100 : 70;
+
+    if (value === 8) {
+      targetNode = document.getElementById('goal-node');
+      token.classList.add('is-goal');
+    } else {
+      const container = document.getElementById(containerId);
+      targetNode = container.querySelector(`[data-val="${value}"]`);
+      token.classList.remove('is-goal');
+    }
+
+    if (targetNode && track) {
+      const targetX = targetNode.offsetLeft + (targetNode.offsetWidth / 2) - (tokenW / 2);
+      const targetY = targetNode.offsetTop + (targetNode.offsetHeight / 2) - (tokenH / 2);
+
+      token.style.transform = `translate3d(${targetX}px, ${targetY}px, 0)`;
+    }
+  }
+
+  function setInitialTokensAtCenter() {
+    const goalNode = document.getElementById('goal-node');
+    const track = document.getElementById('track');
+
+    ['token-p1', 'token-p2'].forEach((tokenId) => {
       const token = document.getElementById(tokenId);
-      const track = document.getElementById('track');
-      let targetNode;
+      if (goalNode && track && token) {
+        const initialX = goalNode.offsetLeft + (goalNode.offsetWidth / 2) - 35;
+        const initialY = goalNode.offsetTop + (goalNode.offsetHeight / 2) - 35;
 
-      const tokenW = (value === 8) ? 100 : 70;
-      const tokenH = (value === 8) ? 100 : 70;
-
-      if (value === 8) {
-        targetNode = document.getElementById('goal-node');
-        token.classList.add('is-goal');
-      } else {
-        const container = document.getElementById(containerId);
-        targetNode = container.querySelector(`[data-val="${value}"]`);
-        token.classList.remove('is-goal');
+        token.style.transition = 'none';
+        token.classList.remove('visible');
+        token.style.transform = `translate3d(${initialX}px, ${initialY}px, 0)`;
       }
+    });
+  }
 
-      if (targetNode && track) {
-        const targetX = targetNode.offsetLeft + (targetNode.offsetWidth / 2) - (tokenW / 2);
-        const targetY = targetNode.offsetTop + (targetNode.offsetHeight / 2) - (tokenH / 2);
+  function playOpeningAnimation() {
+    setInitialTokensAtCenter();
 
-        token.style.transform = `translate3d(${targetX}px, ${targetY}px, 0)`;
-      }
-    }
-
-    // Ubica las fichas inicialmente en el centro (nodo 8) sin animación
-    function setInitialTokensAtCenter() {
-      const goalNode = document.getElementById('goal-node');
-      const track = document.getElementById('track');
-
+    setTimeout(() => {
       ['token-p1', 'token-p2'].forEach((tokenId) => {
         const token = document.getElementById(tokenId);
-        if (goalNode && track && token) {
-          const initialX = goalNode.offsetLeft + (goalNode.offsetWidth / 2) - 35;
-          const initialY = goalNode.offsetTop + (goalNode.offsetHeight / 2) - 35;
-
-          token.style.transition = 'none';
-          token.classList.remove('visible');
-          token.style.transform = `translate3d(${initialX}px, ${initialY}px, 0)`;
+        if (token) {
+          token.style.transition = 'transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease, width 0.3s, height 0.3s';
+          token.classList.add('visible');
         }
       });
-    }
 
-    function playOpeningAnimation() {
-      setInitialTokensAtCenter();
+      updateUI();
+    }, 400);
+  }
 
-      // Esperar a que la barra complete su apertura (0.4s) antes de desvelar y mover fichas
-      setTimeout(() => {
-        ['token-p1', 'token-p2'].forEach((tokenId) => {
-          const token = document.getElementById(tokenId);
-          if (token) {
-            token.style.transition = 'transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease, width 0.3s, height 0.3s';
-            token.classList.add('visible');
-          }
-        });
+  window.addEventListener('load', () => {
+    initPeer();
+    setTimeout(playOpeningAnimation, 100);
+  });
 
-        updateUI();
-      }, 400);
-    }
+  window.addEventListener('resize', updateUI);
 
-    window.addEventListener('load', () => {
-      setTimeout(playOpeningAnimation, 100);
-    });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      const track = document.getElementById('track');
 
-    window.addEventListener('resize', updateUI);
-
-    document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) {
-        const track = document.getElementById('track');
-
-        if (track) {
-          track.classList.remove('animate-in');
-          void track.offsetWidth;
-          track.classList.add('animate-in');
-        }
-
-        playOpeningAnimation();
+      if (track) {
+        track.classList.remove('animate-in');
+        void track.offsetWidth;
+        track.classList.add('animate-in');
       }
-    });
+
+      playOpeningAnimation();
+    }
+  });
+</script>
   </script>
 </body>
 </html>
