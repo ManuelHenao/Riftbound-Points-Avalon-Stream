@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Overlay Pista de Juego</title>
+  <!-- Biblioteca PeerJS para conexión entre PC y Móvil en Red Local/Internet -->
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <style>
     body {
       margin: 0;
@@ -27,7 +29,6 @@
       z-index: 100;
     }
 
-    /* OVERLAY UBICADO ARRIBA CON MARGEN */
     #overlay-container {
       width: 100vw;
       height: 100vh;
@@ -37,7 +38,6 @@
       position: relative;
     }
 
-    /* PISTA CON BORDES DE COLOR #CE3C35 Y FONDO DEGRADADO */
     .track {
       position: relative;
       display: flex;
@@ -68,18 +68,15 @@
 
       box-sizing: border-box;
 
-      /* ORIGEN DE TRANSFORMACIÓN EN EL CENTRO PARA LA ANIMACIÓN */
       transform-origin: center center;
       animation: expandFromCenter 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
-    /* REGLA PARA REINICIAR LA ANIMACIÓN VÍA JS */
     .track.animate-in {
       animation: none;
       animation: expandFromCenter 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
-    /* ANIMACIÓN: EXPANSIÓN DESDE EL CENTRO HACIA LOS EXTREMOS */
     @keyframes expandFromCenter {
       0% {
         opacity: 0;
@@ -96,7 +93,6 @@
       gap: 15px; 
     }
 
-    /* NODOS / NÚMEROS NORMALES */
     .node {
       width: 50px;
       height: 50px;
@@ -109,7 +105,6 @@
       box-sizing: border-box;
     }
 
-    /* NÚMERO 8 CENTRAL (SOLO TEXTO CON SU COLOR) */
     .node.center-goal {
       width: 80px;
       height: 80px;
@@ -122,7 +117,6 @@
       align-items: center;
     }
 
-    /* FICHAS (BADGES) SIN BORDE CON SOMBRA DE COLOR */
     .p-token {
       position: absolute;
       top: 0;
@@ -152,13 +146,11 @@
       box-shadow: 0 0 16px rgba(59, 130, 246, 0.9);
     }
 
-    /* ESCALADO A 100PX AL LLEGAR AL NÚMERO 8 */
     .p-token.is-goal {
       width: 100px !important;
       height: 100px !important;
     }
 
-    /* VISTA CONTROLADOR (MÓVIL) */
     #controller-container {
       display: none;
       height: 100vh;
@@ -199,16 +191,13 @@
 </head>
 <body>
 
-  <div id="status-bar">Conectando...</div>
+  <div id="status-bar">Inicializando...</div>
 
-  <!-- VISTA OVERLAY (OBS) -->
   <div id="overlay-container">
     <div class="track" id="track">
-      <!-- FICHAS JUGADORES -->
       <div id="token-p1" class="p-token"></div>
       <div id="token-p2" class="p-token"></div>
 
-      <!-- LADO JUGADOR 1 (0 A 7) -->
       <div class="side" id="p1-side">
         <div class="node" data-val="0">0</div>
         <div class="node" data-val="1">1</div>
@@ -220,10 +209,8 @@
         <div class="node" data-val="7">7</div>
       </div>
 
-      <!-- CENTRO (NÚMERO 8) -->
       <div class="node center-goal" id="goal-node" data-val="8">8</div>
 
-      <!-- LADO JUGADOR 2 (7 A 0) -->
       <div class="side" id="p2-side">
         <div class="node" data-val="7">7</div>
         <div class="node" data-val="6">6</div>
@@ -237,7 +224,6 @@
     </div>
   </div>
 
-  <!-- VISTA CONTROLADOR -->
   <div id="controller-container">
     <div class="p-control">
       <h2 style="color: #ef4444; margin: 0;">JUGADOR 1</h2>
@@ -261,30 +247,85 @@
   </div>
 
   <script>
-    // ESTADO
     let p1Score = 0;
     let p2Score = 0;
+    let peer = null;
+    let conn = null;
 
-    // DETECCIÓN DE RUTA PARA MODO CONTROLADOR (#controller)
     const isController = window.location.hash === '#controller';
+    const statusBar = document.getElementById('status-bar');
 
     if (isController) {
       document.getElementById('overlay-container').style.display = 'none';
       document.getElementById('controller-container').style.display = 'flex';
       document.getElementById('status-bar').style.display = 'none';
+      initController();
+    } else {
+      initOverlay();
     }
 
-    // BROADCAST CHANNEL PARA SINCRONIZACIÓN
-    const channel = new BroadcastChannel('game_track_channel');
+    // MODO OVERLAY (OBS)
+    function initOverlay() {
+      // ID fijo para que el control siempre sepa a dónde conectar
+      peer = new Peer('game-track-obs-overlay');
 
-    channel.onmessage = (event) => {
-      const data = event.data;
-      if (data.type === 'UPDATE_SCORES') {
-        p1Score = data.p1;
-        p2Score = data.p2;
-        updateUI();
-      }
-    };
+      peer.on('open', (id) => {
+        if (statusBar) statusBar.textContent = 'Listo (Esperando controlador)';
+      });
+
+      peer.on('connection', (connection) => {
+        conn = connection;
+        if (statusBar) statusBar.textContent = 'Controlador Conectado';
+
+        // Enviar estado actual al conectar
+        conn.send({ type: 'UPDATE_SCORES', p1: p1Score, p2: p2Score });
+
+        conn.on('data', (data) => {
+          if (data.type === 'UPDATE_SCORES') {
+            p1Score = data.p1;
+            p2Score = data.p2;
+            updateUI();
+          }
+        });
+
+        conn.on('close', () => {
+          if (statusBar) statusBar.textContent = 'Controlador Desconectado';
+        });
+      });
+
+      peer.on('error', (err) => {
+        if (statusBar) statusBar.textContent = 'Error Peer: ' + err.type;
+      });
+    }
+
+    // MODO CONTROLADOR (TELÉFONO)
+    function initController() {
+      peer = new Peer();
+
+      peer.on('open', () => {
+        connectToOverlay();
+      });
+
+      peer.on('error', (err) => {
+        console.error(err);
+      });
+    }
+
+    function connectToOverlay() {
+      conn = peer.connect('game-track-obs-overlay');
+
+      conn.on('open', () => {
+        console.log('Conectado al Overlay de OBS');
+      });
+
+      conn.on('data', (data) => {
+        if (data.type === 'UPDATE_SCORES') {
+          p1Score = data.p1;
+          p2Score = data.p2;
+          updateUI();
+        }
+      });
+    }
 
     function changeScore(player, delta) {
       if (player === 1) {
@@ -293,11 +334,13 @@
         p2Score = Math.min(Math.max(p2Score + delta, 0), 8);
       }
       
-      channel.postMessage({
-        type: 'UPDATE_SCORES',
-        p1: p1Score,
-        p2: p2Score
-      });
+      if (conn && conn.open) {
+        conn.send({
+          type: 'UPDATE_SCORES',
+          p1: p1Score,
+          p2: p2Score
+        });
+      }
 
       updateUI();
     }
@@ -312,13 +355,11 @@
       }
     }
 
-    // CÁLCULO Y CENTRADO DE FICHAS
     function moveTokenCentered(tokenId, containerId, value) {
       const token = document.getElementById(tokenId);
       const track = document.getElementById('track');
       let targetNode;
 
-      // Definir dinámicamente el tamaño matemáticamente antes de calcular la posición
       const tokenW = (value === 8) ? 100 : 70;
       const tokenH = (value === 8) ? 100 : 70;
 
@@ -349,28 +390,19 @@
       }
     }
 
-    // EVENTO DE VISIBILIDAD PARA OBS STUDIO
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) {
         const track = document.getElementById('track');
-        
         if (track) {
           track.classList.remove('animate-in');
-          void track.offsetWidth; // Forzar reflow en CSS
+          void track.offsetWidth;
           track.classList.add('animate-in');
         }
-
-        // Re-centra las fichas exactas al finalizar la animación
-        setTimeout(() => {
-          updateUI();
-        }, 600);
+        setTimeout(() => { updateUI(); }, 600);
       }
     });
 
-    // INICIALIZACIÓN
     window.addEventListener('load', () => {
-      const statusBar = document.getElementById('status-bar');
-      if (statusBar) statusBar.textContent = 'Listo';
       updateUI();
     });
 
