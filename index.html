@@ -106,7 +106,7 @@
     }
 
     #token-p2 {
-      background-image: url('faccion2.png'); /* Asegúrate de que exista en tu carpeta */
+      background-image: url('faccion1.png'); /* Asegúrate de que exista en tu carpeta */
       border: 2px solid #3b82f6;
       box-shadow: 0 0 12px #3b82f6;
     }
@@ -275,37 +275,41 @@
     }
 
     function moveTokenCentered(tokenId, containerId, value) {
-      const token = document.getElementById(tokenId);
-      const track = document.getElementById('track');
-      let targetNode;
+  const token = document.getElementById(tokenId);
+  const track = document.getElementById('track');
+  let targetNode;
 
-      if (value === 8) {
-        targetNode = document.getElementById('goal-node');
-      } else {
-        const container = document.getElementById(containerId);
-        targetNode = container.querySelector(`[data-val="${value}"]`);
-      }
+  if (value === 8) {
+    targetNode = document.getElementById('goal-node');
+  } else {
+    const container = document.getElementById(containerId);
+    targetNode = container.querySelector(`[data-val="${value}"]`);
+  }
 
-      if (targetNode && track) {
-        // Coordenadas globales de pantalla (Viewport)
-        const trackRect = track.getBoundingClientRect();
-        const nodeRect = targetNode.getBoundingClientRect();
+  if (targetNode && track) {
+    const trackRect = track.getBoundingClientRect();
+    const nodeRect = targetNode.getBoundingClientRect();
 
-        // Ancho/Alto real de la ficha (70px) y del nodo objetivo
-        const tokenW = token.offsetWidth || 70;
-        const tokenH = token.offsetHeight || 70;
+    // Obtener el grosor real del borde del track para compensar el origen del CSS
+    const trackStyle = window.getComputedStyle(track);
+    const borderLeft = parseFloat(trackStyle.borderLeftWidth) || 0;
+    const borderTop = parseFloat(trackStyle.borderTopWidth) || 0;
 
-        // Cálculo del centro exacto del número objetivo relativo al borde exterior de #track
-        const nodeCenterX = nodeRect.left + (nodeRect.width / 2);
-        const nodeCenterY = nodeRect.top + (nodeRect.height / 2);
+    // Centro del nodo objetivo en pantalla
+    const nodeCenterX = nodeRect.left + (nodeRect.width / 2);
+    const nodeCenterY = nodeRect.top + (nodeRect.height / 2);
 
-        // Posición final para alinear el centro de la ficha de 70px sobre el centro del nodo
-        const exactX = nodeCenterX - trackRect.left - (tokenW / 2);
-        const exactY = nodeCenterY - trackRect.top - (tokenH / 2);
+    // Tamaño del token (70px)
+    const tokenW = token.offsetWidth || 70;
+    const tokenH = token.offsetHeight || 70;
 
-        token.style.transform = `translate3d(${exactX}px, ${exactY}px, 0)`;
-      }
-    }
+    // Cálculo con compensación de borde (Border Box Offset)
+    const exactX = nodeCenterX - trackRect.left - borderLeft - (tokenW / 2);
+    const exactY = nodeCenterY - trackRect.top - borderTop - (tokenH / 2);
+
+    token.style.transform = `translate3d(${exactX}px, ${exactY}px, 0)`;
+  }
+}
 
     // Asegurar centrado al cargar todo y al cambiar tamaño
     window.addEventListener('load', () => {
