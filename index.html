@@ -58,16 +58,19 @@
       box-sizing: border-box;
       opacity: 0;
       transform: scaleX(0);
+      transform-origin: center center;
     }
 
-    /* Clase para ocultar inmediatamente cuando OBS oculta la fuente */
-    .track.hidden-state {
-      opacity: 0 !important;
-      transform: scaleX(0) !important;
-      animation: none !important;
+    /* CLASES DE ANIMACIÓN PARA LA PISTA */
+    .track.anim-in {
+      animation: scaleXExpand 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
-    /* ANIMACIÓN: Pista se abre desde el centro */
+    .track.anim-out {
+      animation: scaleXCollapse 0.3s ease-in forwards;
+    }
+
+    /* ANIMACIONES KEYFRAMES PISTA */
     @keyframes scaleXExpand {
       0% {
         opacity: 0;
@@ -76,6 +79,17 @@
       100% {
         opacity: 1;
         transform: scaleX(1);
+      }
+    }
+
+    @keyframes scaleXCollapse {
+      0% {
+        opacity: 1;
+        transform: scaleX(1);
+      }
+      100% {
+        opacity: 0;
+        transform: scaleX(0);
       }
     }
 
@@ -97,7 +111,7 @@
       box-sizing: border-box;
     }
 
-    /* NÚMERO 8 CENTRAL (BLANCO POR DEFECTO, ROJO AL CONECTAR) */
+    /* NÚMERO 8 CENTRAL */
     .node.center-goal {
       width: 80px;
       height: 80px;
@@ -134,8 +148,7 @@
       box-sizing: border-box;
       opacity: 0;
 
-      /* Transición suave para desplazamiento e incremento de tamaño */
-      transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease, width 0.3s, height 0.3s;
+      transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, width 0.3s, height 0.3s;
     }
 
     .p-token.visible {
@@ -200,7 +213,7 @@
 
   <!-- OVERLAY (OBS) -->
   <div id="overlay-container">
-    <div class="track hidden-state" id="track">
+    <div class="track" id="track">
       <div class="side" id="p1-nodes">
         <div class="node" data-val="0">0</div>
         <div class="node" data-val="1">1</div>
@@ -356,55 +369,88 @@
       });
     }
 
-    function playOpeningAnimation() {
-      const track = document.getElementById('track');
+    let isAnimatingOut = false;
 
+    // ANIMACIÓN DE ENTRADA
+    function playInAnimation() {
+      if (isControl) return;
+      isAnimatingOut = false;
+      const track = document.getElementById('track');
       if (!track) return;
 
-      // 1. Asegurar fichas en el centro sin visibilidad
       setInitialTokensAtCenter();
 
-      // 2. Remover la clase de ocultamiento y activar animación
-      track.classList.remove('hidden-state');
-      track.style.animation = 'none';
-      void track.offsetWidth; // Reflow obligatorio
-      track.style.animation = 'scaleXExpand 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards';
+      track.classList.remove('anim-out');
+      track.classList.remove('anim-in');
+      void track.offsetWidth; // Force Reflow
+      track.classList.add('anim-in');
 
-      // 3. Desplegar badges tras la apertura del riel
       setTimeout(() => {
+        if (isAnimatingOut) return;
         ['token-p1', 'token-p2'].forEach((tokenId) => {
           const token = document.getElementById(tokenId);
           if (token) {
-            token.style.transition = 'transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease, width 0.3s, height 0.3s';
+            token.style.transition = 'transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, width 0.3s, height 0.3s';
             token.classList.add('visible');
           }
         });
-
         updateUI();
-      }, 400);
+      }, 350);
     }
 
+    // ANIMACIÓN DE SALIDA RÁPIDA
+    function playOutAnimation() {
+      if (isControl) return;
+      isAnimatingOut = true;
+      const track = document.getElementById('track');
+      if (!track) return;
+
+      // Ocultar badges
+      ['token-p1', 'token-p2'].forEach((tokenId) => {
+        const token = document.getElementById(tokenId);
+        if (token) {
+          token.classList.remove('visible');
+        }
+      });
+
+      // Contraer la barra de números rápidamente (0.3s)
+      track.classList.remove('anim-in');
+      track.classList.remove('anim-out');
+      void track.offsetWidth;
+      track.classList.add('anim-out');
+    }
+
+    // MANEJADOR UNIFICADO DE VISIBILIDAD (OBS Studio API + Navegador)
+    function handleVisibility(visible) {
+      if (visible) {
+        playInAnimation();
+      } else {
+        playOutAnimation();
+      }
+    }
+
+    // Listener de OBS Studio NATIVO (Se ejecuta justo antes/durante el cambio en OBS)
+    if (window.obsstudio) {
+      window.obsstudio.onActiveChange = function(active) {
+        handleVisibility(active);
+      };
+      window.obsstudio.onVisibilityChange = function(visibility) {
+        handleVisibility(visibility);
+      };
+    }
+
+    // Fallback estándar por si se prueba en navegador web fuera de OBS
+    document.addEventListener('visibilitychange', () => {
+      handleVisibility(!document.hidden);
+    });
+
     window.addEventListener('load', () => {
-      setTimeout(playOpeningAnimation, 100);
+      if (!isControl) {
+        playInAnimation();
+      }
     });
 
     window.addEventListener('resize', updateUI);
-
-    // CONTROL DE VISIBILIDAD DE OBS
-    document.addEventListener('visibilitychange', () => {
-      const track = document.getElementById('track');
-
-      if (document.hidden) {
-        // En cuanto OBS oculta el elemento, lo regresamos inmediatamente al estado colapsado e invisible
-        if (track) {
-          track.classList.add('hidden-state');
-        }
-        setInitialTokensAtCenter();
-      } else {
-        // Cuando vuelve a mostrarse en OBS, ejecuta la animación desde cero de forma limpia
-        playOpeningAnimation();
-      }
-    });
   </script>
 </body>
 </html>
