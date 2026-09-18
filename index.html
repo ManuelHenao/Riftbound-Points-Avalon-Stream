@@ -99,7 +99,7 @@
       width: 80px;
       height: 80px;
       background: transparent;
-      color: #ffffff; /* Desconectado */
+      color: #ffffff;
       font-size: 42px;
       margin: 0 20px;
       display: flex;
@@ -109,10 +109,10 @@
     }
 
     .node.center-goal.connected {
-      color: #CE3C35; /* Conectado */
+      color: #CE3C35;
     }
 
-    /* FICHAS (BADGES) CON ANIMACIÓN SINCRO Y DELAY */
+    /* FICHAS (BADGES) */
     .p-token {
       position: absolute;
       top: 0;
@@ -129,25 +129,14 @@
       background-repeat: no-repeat;
       pointer-events: none;
       box-sizing: border-box;
+      opacity: 0;
 
-      /* Animación de aparición con delay */
-      animation: popInToken 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.4s backwards;
-      transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), width 0.3s, height 0.3s;
+      /* Transición suave para desplazamiento e incremento de tamaño */
+      transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease, width 0.3s, height 0.3s;
     }
 
-    .track.animate-in .p-token {
-      animation: none;
-      animation: popInToken 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.4s backwards;
-    }
-
-    @keyframes popInToken {
-      0% {
-        opacity: 0;
-        transform: scale(0);
-      }
-      100% {
-        opacity: 1;
-      }
+    .p-token.visible {
+      opacity: 1;
     }
 
     #token-p1 {
@@ -284,7 +273,6 @@
 
       peer.on('connection', (c) => {
         conn = c;
-        // Marca la conexión tiñendo el número 8 de color rojo (#CE3C35)
         const goalNode = document.getElementById('goal-node');
         if (goalNode) goalNode.classList.add('connected');
 
@@ -348,9 +336,45 @@
       }
     }
 
+    // Ubica las fichas inicialmente en el centro (nodo 8) sin animación
+    function setInitialTokensAtCenter() {
+      const goalNode = document.getElementById('goal-node');
+      const track = document.getElementById('track');
+
+      ['token-p1', 'token-p2'].forEach((tokenId) => {
+        const token = document.getElementById(tokenId);
+        if (goalNode && track && token) {
+          const initialX = goalNode.offsetLeft + (goalNode.offsetWidth / 2) - 35;
+          const initialY = goalNode.offsetTop + (goalNode.offsetHeight / 2) - 35;
+
+          token.style.transition = 'none';
+          token.classList.remove('visible');
+          token.style.transform = `translate3d(${initialX}px, ${initialY}px, 0)`;
+        }
+      });
+    }
+
+    function playOpeningAnimation() {
+      setInitialTokensAtCenter();
+
+      // Esperar a que la barra complete su apertura (0.4s) antes de desvelar y mover fichas
+      setTimeout(() => {
+        ['token-p1', 'token-p2'].forEach((tokenId) => {
+          const token = document.getElementById(tokenId);
+          if (token) {
+            token.style.transition = 'transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease, width 0.3s, height 0.3s';
+            token.classList.add('visible');
+          }
+        });
+
+        updateUI();
+      }, 400);
+    }
+
     window.addEventListener('load', () => {
-      setTimeout(updateUI, 100);
+      setTimeout(playOpeningAnimation, 100);
     });
+
     window.addEventListener('resize', updateUI);
 
     document.addEventListener('visibilitychange', () => {
@@ -363,7 +387,7 @@
           track.classList.add('animate-in');
         }
 
-        setTimeout(updateUI, 50);
+        playOpeningAnimation();
       }
     });
   </script>
