@@ -39,7 +39,7 @@
     }
 
     .track {
-      position: relative;
+      position: relative !important;
       display: flex;
       align-items: center;
       background: rgba(15, 23, 42, 0.85);
@@ -79,12 +79,12 @@
 
     /* FICHAS / BADGES (TAMAÑO COINCIDENTE DE 50PX) */
     .p-token {
-      position: absolute;
-      top: 0;
-      left: 0;
-      margin: 0; /* Obligatorio para evitar desfasamientos */
-      width: 70px;
-      height: 70px;
+      position: absolute !important;
+      top: 0 !important;
+      left: 0 !important;
+      margin: 0 !important;
+      width: 70px !important;
+      height: 70px !important;
       border-radius: 50%;
       z-index: 10;
       transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
@@ -92,6 +92,7 @@
       background-position: center;
       background-repeat: no-repeat;
       pointer-events: none;
+      box-sizing: border-box;
     }
 
     #token-p1 {
@@ -276,7 +277,6 @@ function moveTokenCentered(tokenId, containerId, value) {
   const track = document.getElementById('track');
   let targetNode;
 
-  // 1. Obtener el número objetivo (0-7 o el 8 central)
   if (value === 8) {
     targetNode = document.getElementById('goal-node');
   } else {
@@ -285,20 +285,24 @@ function moveTokenCentered(tokenId, containerId, value) {
   }
 
   if (targetNode && track) {
-    // 2. Obtener el centro del nodo y la pista
+    // 1. Obtener rectángulos exactos en pantalla
     const trackRect = track.getBoundingClientRect();
     const nodeRect = targetNode.getBoundingClientRect();
 
-    // 3. Ancho/Alto real de la ficha (si no se ha renderizado, se asume 50)
-    const tokenWidth = token.offsetWidth || 50;
-    const tokenHeight = token.offsetHeight || 50;
+    // 2. Obtener el tamaño real del token (los 70px que configuraste)
+    const tokenWidth = token.offsetWidth || 70;
+    const tokenHeight = token.offsetHeight || 70;
 
-    // 4. Calcular el centro del nodo relativo al marco superior-izquierdo de la pista
-    const x = (nodeRect.left - trackRect.left) + (nodeRect.width / 2) - (tokenWidth / 2);
-    const y = (nodeRect.top - trackRect.top) + (nodeRect.height / 2) - (tokenHeight / 2);
+    // 3. Encontrar el punto central exacto del número objetivo
+    const nodeCenterX = nodeRect.left + (nodeRect.width / 2);
+    const nodeCenterY = nodeRect.top + (nodeRect.height / 2);
 
-    // 5. Mover la ficha al centro geométrico exacto
-    token.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`;
+    // 4. Calcular la esquina superior izquierda donde debe ir el token para que sus centros coincidan
+    const exactLeft = nodeCenterX - trackRect.left - (tokenWidth / 2);
+    const exactTop = nodeCenterY - trackRect.top - (tokenHeight / 2);
+
+    // 5. Aplicar la posición
+    token.style.transform = `translate3d(${Math.round(exactLeft)}px, ${Math.round(exactTop)}px, 0)`;
   }
 }
 
