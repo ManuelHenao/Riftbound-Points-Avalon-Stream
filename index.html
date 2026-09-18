@@ -107,6 +107,12 @@
       position: relative;
       z-index: 2;
       box-sizing: border-box;
+      transition: border-color 0.3s ease;
+    }
+
+    /* SI LA FICHA ESTÁ ENCIMA DEL NODO: CÍRCULO INVISIBLE */
+    .node.occupied {
+      border-color: transparent !important;
     }
 
     /* NÚMERO 8 CENTRAL (MÁS GRANDE CON BORDE DE 4PX) */
@@ -130,9 +136,9 @@
       box-sizing: border-box;
     }
 
+    /* ÚNICAMENTE EL NÚMERO 8 CAMBIA SU BORDE A BLANCO AL CONECTAR EL TELÉFONO */
     .node.center-goal.connected {
-      color: #CE3C35;
-      border-color: #CE3C35;
+      border-color: #ffffff;
     }
 
     /* FICHAS (BADGES) REESCALADAS PARA LA NUEVA ALTURA */
@@ -315,6 +321,8 @@
       peer.on('connection', (c) => {
         conn = c;
         const goalNode = document.getElementById('goal-node');
+
+        // Solamente se añade la clase connected al nodo 8
         if (goalNode) goalNode.classList.add('connected');
 
         conn.on('data', (data) => {
@@ -380,6 +388,26 @@
 
       moveTokenCentered('token-p1', 'p1-nodes', state.p1);
       moveTokenCentered('token-p2', 'p2-nodes', state.p2);
+      updateOccupiedNodes();
+    }
+
+    function updateOccupiedNodes() {
+      // Remover la clase ocupado de todos los nodos
+      document.querySelectorAll('.node').forEach(node => {
+        node.classList.remove('occupied');
+      });
+
+      // Nodo ocupado P1
+      const p1Node = (state.p1 === 8) 
+        ? document.getElementById('goal-node')
+        : document.querySelector(`#p1-nodes [data-val="${state.p1}"]`);
+      if (p1Node) p1Node.classList.add('occupied');
+
+      // Nodo ocupado P2
+      const p2Node = (state.p2 === 8)
+        ? document.getElementById('goal-node')
+        : document.querySelector(`#p2-nodes [data-val="${state.p2}"]`);
+      if (p2Node) p2Node.classList.add('occupied');
     }
 
     function moveTokenCentered(tokenId, containerId, value) {
