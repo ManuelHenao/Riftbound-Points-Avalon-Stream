@@ -175,6 +175,60 @@ button {
 .btn-p1 { background: #ef4444; }
 .btn-p2 { background: #3b82f6; }
 .score-disp { font-size: 48px; font-weight: bold; }
+
+/* PISTA BASE */
+.track {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-top: 30px;
+  padding: 10px 40px;
+  
+  background: linear-gradient(
+    90deg, 
+    rgba(0, 0, 0, 0) 0%, 
+    rgba(0, 0, 0, 0.7) 25%, 
+    rgba(0, 0, 0, 0.7) 75%, 
+    rgba(0, 0, 0, 0) 100%
+  );
+
+  border-top: 3px solid transparent;
+  border-bottom: 3px solid transparent;
+  border-left: none;
+  border-right: none;
+
+  border-image: linear-gradient(
+    90deg, 
+    rgba(206, 60, 53, 0) 0%, 
+    rgba(206, 60, 53, 0.9) 30%, 
+    rgba(206, 60, 53, 0.9) 70%, 
+    rgba(206, 60, 53, 0) 100%
+  ) 1;
+
+  box-sizing: border-box;
+
+  /* Animación de entrada inicial */
+  animation: slideDownFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* REGLA PARA REINICIAR ANIMACIÓN CON JS */
+.track.animate-in {
+  animation: none;
+  /* Fuerza el 'reflow' del navegador */
+  animation: slideDownFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ANIMACIÓN: Desciende suavemente desde arriba y aparece */
+@keyframes slideDownFade {
+  0% {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}    
   </style>
 </head>
 <body>
@@ -343,6 +397,26 @@ button {
       setTimeout(updateUI, 100);
     });
     window.addEventListener('resize', updateUI);
+    
+    // Detección de visibilidad en OBS Studio
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    const track = document.getElementById('track');
+    
+    if (track) {
+      // Reinicia la animación eliminando y reasignando la clase
+      track.classList.remove('animate-in');
+      void track.offsetWidth; // Dispara un reflow en CSS
+      track.classList.add('animate-in');
+    }
+
+    // Recalcula la posición de las fichas para asegurar centrado tras la animación
+    setTimeout(() => {
+      if (typeof p1Score !== 'undefined') moveTokenCentered('token-p1', 'p1-side', p1Score);
+      if (typeof p2Score !== 'undefined') moveTokenCentered('token-p2', 'p2-side', p2Score);
+    }, 50);
+  }
+});
   </script>
 </body>
 </html>
