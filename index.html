@@ -26,11 +26,12 @@
       position: relative;
     }
 
-    /* PISTA BASE (Por defecto completamente oculta sin renders previos) */
+    /* PISTA BASE */
     .track {
       position: relative;
       display: flex;
       align-items: center;
+      justify-content: center;
       margin-top: 30px;
       padding: 10px 40px;
 
@@ -57,18 +58,19 @@
 
       box-sizing: border-box;
 
-      /* Estado base oculto */
+      /* Estado base oculto mediante recorte de ancho desde el centro */
+      max-width: 0px;
       opacity: 0;
-      transform: scaleX(0);
-      transform-origin: center center;
-      transition: transform 0.3s ease-in, opacity 0.2s ease-in;
+      overflow: hidden;
+      white-space: nowrap;
+      transition: max-width 0.3s ease-in, opacity 0.2s ease-in;
     }
 
-    /* ANIMACIÓN DE ENTRADA CUANDO OBS ACTIVA LA VISIBILIDAD */
+    /* ANIMACIÓN DE ENTRADA (Abre el ancho de la pista progresivamente) */
     .track.show-track {
+      max-width: 1200px; /* Ancho suficiente para desplegar toda la pista */
       opacity: 1;
-      transform: scaleX(1);
-      transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease-out;
+      transition: max-width 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease-out;
     }
 
     .side { 
@@ -87,6 +89,7 @@
       color: #94a3b8;
       font-weight: bold;
       box-sizing: border-box;
+      flex-shrink: 0;
     }
 
     /* NÚMERO 8 CENTRAL */
@@ -100,6 +103,7 @@
       display: flex;
       justify-content: center;
       align-items: center;
+      flex-shrink: 0;
       transition: color 0.4s ease;
     }
 
@@ -126,8 +130,7 @@
       box-sizing: border-box;
       opacity: 0;
 
-      /* Transición para movimiento suave y entrada/salida */
-      transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease, width 0.3s, height 0.3s;
+      transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, width 0.3s, height 0.3s;
     }
 
     .p-token.visible {
@@ -354,13 +357,13 @@
       const track = document.getElementById('track');
       if (!track) return;
 
-      // Colocar fichas en el centro sin opacidad
+      // Colocar las fichas ocultas en el nodo central
       setInitialTokensAtCenter();
 
-      // Abrir pista con transición fluida CSS
+      // Abrir la pista desplegando el ancho (max-width)
       track.classList.add('show-track');
 
-      // Desplegar badges
+      // Revelar y mover las fichas hacia sus puntajes
       setTimeout(() => {
         ['token-p1', 'token-p2'].forEach((tokenId) => {
           const token = document.getElementById(tokenId);
@@ -370,7 +373,7 @@
           }
         });
         updateUI();
-      }, 300);
+      }, 350);
     }
 
     // ANIMACIÓN DE SALIDA
@@ -387,7 +390,7 @@
         }
       });
 
-      // 2. Cerrar la pista rápidamente hacia el centro (0.3s)
+      // 2. Colapsar la pista al centro rápidamente
       track.classList.remove('show-track');
     }
 
@@ -409,7 +412,7 @@
       };
     }
 
-    // Evento de pestaña/navegador habitual
+    // Evento estándar para navegador
     document.addEventListener('visibilitychange', () => {
       handleVisibility(!document.hidden);
     });
