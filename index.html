@@ -2,8 +2,15 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Riftbound Score Track</title>
+
+  <!-- Meta tags para modo PWA / Web App (Ocultar barra de búsqueda al añadir a pantalla de inicio) -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0f172a">
+
   <!-- Librería PeerJS -->
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <style>
@@ -165,6 +172,22 @@
       align-items: center;
       padding: 20px;
       box-sizing: border-box;
+      position: relative;
+    }
+
+    /* BOTÓN PANTALLA COMPLETA EN CONTROLADOR */
+    .btn-fs {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      width: auto;
+      height: auto;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-family: sans-serif;
+      background: #334155;
+      color: #94a3b8;
+      border-radius: 8px;
     }
 
     .p-control {
@@ -229,6 +252,8 @@
 
   <!-- CONTROLADOR (TELÉFONO) -->
   <div id="controller-container">
+    <button class="btn-fs" onclick="toggleFullScreen()">⛶ Pantalla Completa</button>
+
     <div class="p-control">
       <h2 style="color: #ef4444; margin:0;">JUGADOR 1</h2>
       <div class="score-disp" id="p1-score-txt">0</div>
@@ -259,6 +284,7 @@
     if (isControl) {
       document.getElementById('overlay-container').style.display = 'none';
       document.getElementById('controller-container').style.display = 'flex';
+      initWakeLock();
     }
 
     let peer, conn;
@@ -285,6 +311,36 @@
           if (goalNode) goalNode.classList.remove('connected');
         });
       });
+    }
+
+    /* GESTIÓN DE BLOQUEO DE PANTALLA (WAKE LOCK API) */
+    let wakeLock = null;
+
+    async function initWakeLock() {
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLock = await navigator.wakeLock.request('screen');
+        }
+      } catch (err) {
+        console.log(`Wake Lock Error: ${err.message}`);
+      }
+    }
+
+    document.addEventListener('visibilitychange', async () => {
+      if (wakeLock !== null && document.visibilityState === 'visible' && isControl) {
+        await initWakeLock();
+      }
+    });
+
+    /* TOGGLE PANTALLA COMPLETA */
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
     }
 
     function changeScore(player, delta) {
@@ -372,13 +428,15 @@
     }
 
     window.addEventListener('load', () => {
-      setTimeout(playOpeningAnimation, 100);
+      if (!isControl) {
+        setTimeout(playOpeningAnimation, 100);
+      }
     });
 
     window.addEventListener('resize', updateUI);
 
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) {
+      if (!document.hidden && !isControl) {
         const track = document.getElementById('track');
 
         if (track) {
