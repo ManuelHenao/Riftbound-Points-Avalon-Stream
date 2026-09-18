@@ -47,7 +47,6 @@
   margin-top: 30px;
   padding: 10px 40px;
   
-  /* Fondo negro con degradado de opacidad */
   background: linear-gradient(
     90deg, 
     rgba(0, 0, 0, 0) 0%, 
@@ -56,7 +55,6 @@
     rgba(0, 0, 0, 0) 100%
   );
 
-  /* Bordes superior e inferior con degradado en el color #CE3C35 */
   border-top: 3px solid transparent;
   border-bottom: 3px solid transparent;
   border-left: none;
@@ -91,24 +89,35 @@
   box-sizing: border-box;
 }
 
-/* NÚMERO 8 EN FORMA DE ROMBO Y COLOR #CE3C35 */
+/* NÚMERO 8 EN FORMA DE ROMBO TRANSPARENTE CON BORDE #CE3C35 */
 .node.center-goal {
+  position: relative;
   width: 80px;
   height: 80px;
-  background: rgba(206, 60, 53, 0.25);
+  background: transparent; /* Sin relleno */
   color: #CE3C35;
   font-size: 42px;
   margin: 0 20px;
-  
-  /* Corte en forma de Rombo */
-  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
-  border-radius: 0; /* Desactiva el círculo anterior */
-  
-  /* Sombra simulada para el corte del rombo */
-  filter: drop-shadow(0 0 10px rgba(206, 60, 53, 0.7));
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-/* FICHAS DE 70PX CON CENTRADO */
+/* DIBUJO DEL BORDE DEL ROMBO */
+.node.center-goal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 3px solid #CE3C35;
+  box-sizing: border-box;
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  pointer-events: none;
+}
+
+/* FICHAS (BADGES) SIN BORDE CON SOMBRA DE COLOR */
 .p-token {
   position: absolute;
   top: 0;
@@ -118,8 +127,9 @@
   width: 70px;
   height: 70px;
   border-radius: 50%;
+  border: none !important; /* Sin borde */
   z-index: 10;
-  transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), width 0.3s, height 0.3s;
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
@@ -129,14 +139,18 @@
 
 #token-p1 {
   background-image: url('faccion1.png');
-  border: 2px solid #ef4444;
-  box-shadow: 0 0 12px #ef4444;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.9); /* Sombra roja J1 */
 }
 
 #token-p2 {
-  background-image: url('faccion1.png');
-  border: 2px solid #3b82f6;
-  box-shadow: 0 0 12px #3b82f6;
+  background-image: url('faccion2.png');
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.9); /* Sombra azul J2 */
+}
+
+/* ESCALADO MAYOR (100PX) AL LLEGAR AL NÚMERO 8 */
+.p-token.is-goal {
+  width: 100px !important;
+  height: 100px !important;
 }
 
 /* VISTA CONTROLADOR (TELÉFONO) */
@@ -309,29 +323,28 @@ button {
 
   if (value === 8) {
     targetNode = document.getElementById('goal-node');
+    token.classList.add('is-goal'); // Agranda la badge a 100px
   } else {
     const container = document.getElementById(containerId);
     targetNode = container.querySelector(`[data-val="${value}"]`);
+    token.classList.remove('is-goal'); // Restablece a 70px
   }
 
   if (targetNode && track) {
     const trackRect = track.getBoundingClientRect();
     const nodeRect = targetNode.getBoundingClientRect();
 
-    // Obtener el grosor real del borde del track para compensar el origen del CSS
     const trackStyle = window.getComputedStyle(track);
     const borderLeft = parseFloat(trackStyle.borderLeftWidth) || 0;
     const borderTop = parseFloat(trackStyle.borderTopWidth) || 0;
 
-    // Centro del nodo objetivo en pantalla
     const nodeCenterX = nodeRect.left + (nodeRect.width / 2);
     const nodeCenterY = nodeRect.top + (nodeRect.height / 2);
 
-    // Tamaño del token (70px)
-    const tokenW = token.offsetWidth || 70;
-    const tokenH = token.offsetHeight || 70;
+    // Mide dinámicamente el tamaño (70px o 100px si está en la meta)
+    const tokenW = token.offsetWidth;
+    const tokenH = token.offsetHeight;
 
-    // Cálculo con compensación de borde (Border Box Offset)
     const exactX = nodeCenterX - trackRect.left - borderLeft - (tokenW / 2);
     const exactY = nodeCenterY - trackRect.top - borderTop - (tokenH / 2);
 
