@@ -74,22 +74,39 @@
       margin: 0 15px;
     }
 
-    /* FICHAS / INDICADORES */
-    .p-token {
-      position: absolute;
-      width: 46px;
-      height: 46px;
-      border-radius: 50%;
-      z-index: 3;
-      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      box-shadow: 0 0 12px currentColor;
-    }
+    /* CONFIGURACIÓN GENERAL DE LAS FICHAS CON IMAGEN */
+.p-token {
+  position: absolute;
+  width: 50px;              /* Tamaño de la ficha */
+  height: 50px;
+  border-radius: 50%;
+  z-index: 3;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  
+  /* Ajustes para mostrar la imagen correctamente */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border: 2px solid #ffffff; /* Borde blanco para resaltar sobre el fondo */
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
+}
 
-    #token-p1 { background: #ef4444; color: #ef4444; border: 2px solid #ffffff; }
-    #token-p2 { background: #3b82f6; color: #3b82f6; border: 2px solid #ffffff; }
+/* LOGO Y ESTILO PARA EL JUGADOR 1 */
+#token-p1 {
+  background-image: url('faccion1.png'); /* Ruta a la imagen del J1 */
+  border-color: #ef4444;                 /* Borde con el color característico */
+  box-shadow: 0 0 14px #ef4444;
+}
+
+/* LOGO Y ESTILO PARA EL JUGADOR 2 */
+#token-p2 {
+  background-image: url('faccion1.png'); /* Ruta a la imagen del J2 */
+  border-color: #3b82f6;                 /* Borde con el color característico */
+  box-shadow: 0 0 14px #3b82f6;
+}
 
     /* CONTROL EN EL TELÉFONO */
     #controller-container {
