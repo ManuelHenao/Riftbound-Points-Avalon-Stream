@@ -76,22 +76,17 @@
       margin: 0 15px;
     }
 
-    /* OCULTA EL NÚMERO DEBAJO DE LA FICHA */
-    .node.is-active {
-      opacity: 0;
-    }
-
     /* FICHAS / BADGES (TAMAÑO COINCIDENTE DE 50PX) */
     .p-token {
       position: absolute;
       top: 0;
       left: 0;
-      width: 50px;
-      height: 50px;
+      width: 70px;
+      height: 70px;
       border-radius: 50%;
       z-index: 10;
-      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-      background-size: cover;
+      transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+      background-size: contain;
       background-position: center;
       background-repeat: no-repeat;
       pointer-events: none;
@@ -104,7 +99,7 @@
     }
 
     #token-p2 {
-      background-image: url('faccion2.png'); /* Reemplaza con tu archivo o URL */
+      background-image: url('faccion1.png'); /* Reemplaza con tu archivo o URL */
       border: 2px solid #3b82f6;
       box-shadow: 0 0 12px #3b82f6;
     }
@@ -210,107 +205,105 @@
   <!-- AQUÍ INICIA EL JAVASCRIPT -->
   <script>
     let state = { p1: 0, p2: 0 };
-    const urlParams = new URLSearchParams(window.location.search);
-    const room = urlParams.get('room') || 'riftbound-123';
-    const isControl = urlParams.has('control');
-    const statusBar = document.getElementById('status-bar');
+const urlParams = new URLSearchParams(window.location.search);
+const room = urlParams.get('room') || 'riftbound-123';
+const isControl = urlParams.has('control');
+const statusBar = document.getElementById('status-bar');
 
-    if (isControl) {
-      document.getElementById('overlay-container').style.display = 'none';
-      document.getElementById('controller-container').style.display = 'flex';
-    }
+if (isControl) {
+  document.getElementById('overlay-container').style.display = 'none';
+  document.getElementById('controller-container').style.display = 'flex';
+}
 
-    let peer, conn;
+let peer, conn;
 
-    if (isControl) {
-      peer = new Peer();
-      peer.on('open', () => {
-        statusBar.innerText = "Conectando...";
-        conn = peer.connect('obs-' + room);
-        conn.on('open', () => {
-          statusBar.innerText = "Conectado por Internet";
-          statusBar.style.color = "#4ade80";
-        });
-      });
-    } else {
-      peer = new Peer('obs-' + room);
-      peer.on('open', () => {
-        statusBar.innerText = "OBS Listo. Esperando al celular...";
-      });
+if (isControl) {
+  peer = new Peer();
+  peer.on('open', () => {
+    statusBar.innerText = "Conectando...";
+    conn = peer.connect('obs-' + room);
+    conn.on('open', () => {
+      statusBar.innerText = "Conectado por Internet";
+      statusBar.style.color = "#4ade80";
+    });
+  });
+} else {
+  peer = new Peer('obs-' + room);
+  peer.on('open', () => {
+    statusBar.innerText = "OBS Listo. Esperando al celular...";
+  });
 
-      peer.on('connection', (c) => {
-        conn = c;
-        statusBar.innerText = "Celular conectado";
-        statusBar.style.color = "#4ade80";
-        conn.on('data', (data) => {
-          state = data;
-          updateUI();
-        });
-      });
-    }
-
-    function changeScore(player, delta) {
-      if (player === 1) {
-        state.p1 = Math.min(8, Math.max(0, state.p1 + delta));
-      } else {
-        state.p2 = Math.min(8, Math.max(0, state.p2 + delta));
-      }
-
-      if (conn && conn.open) {
-        conn.send(state);
-      }
+  peer.on('connection', (c) => {
+    conn = c;
+    statusBar.innerText = "Celular conectado";
+    statusBar.style.color = "#4ade80";
+    conn.on('data', (data) => {
+      state = data;
       updateUI();
-    }
+    });
+  });
+}
 
-    function updateUI() {
-      if (isControl) {
-        document.getElementById('p1-score-txt').innerText = state.p1;
-        document.getElementById('p2-score-txt').innerText = state.p2;
-        return;
-      }
+function changeScore(player, delta) {
+  if (player === 1) {
+    state.p1 = Math.min(8, Math.max(0, state.p1 + delta));
+  } else {
+    state.p2 = Math.min(8, Math.max(0, state.p2 + delta));
+  }
 
-      // Restablecer transparencia de todos los números
-      document.querySelectorAll('.node').forEach(n => n.classList.remove('is-active'));
+  if (conn && conn.open) {
+    conn.send(state);
+  }
+  updateUI();
+}
 
-      // Posicionar e invisibilizar número objetivo
-      moveAndHideNumber('token-p1', 'p1-nodes', state.p1);
-      moveAndHideNumber('token-p2', 'p2-nodes', state.p2);
-    }
+function updateUI() {
+  if (isControl) {
+    document.getElementById('p1-score-txt').innerText = state.p1;
+    document.getElementById('p2-score-txt').innerText = state.p2;
+    return;
+  }
 
-    function moveAndHideNumber(tokenId, containerId, value) {
-      const token = document.getElementById(tokenId);
-      const track = document.getElementById('track');
-      let targetNode;
+  // Posicionar las fichas sobre los números manteniendo el número visible
+  moveTokenCentered('token-p1', 'p1-nodes', state.p1);
+  moveTokenCentered('token-p2', 'p2-nodes', state.p2);
+}
 
-      if (value === 8) {
-        targetNode = document.getElementById('goal-node');
-      } else {
-        const container = document.getElementById(containerId);
-        targetNode = container.querySelector(`[data-val="${value}"]`);
-      }
+function moveTokenCentered(tokenId, containerId, value) {
+  const token = document.getElementById(tokenId);
+  const track = document.getElementById('track');
+  let targetNode;
 
-      if (targetNode && track) {
-        targetNode.classList.add('is-active');
+  if (value === 8) {
+    targetNode = document.getElementById('goal-node');
+  } else {
+    const container = document.getElementById(containerId);
+    targetNode = container.querySelector(`[data-val="${value}"]`);
+  }
 
-        const trackRect = track.getBoundingClientRect();
-        const nodeRect = targetNode.getBoundingClientRect();
+  if (targetNode && track) {
+    // Posición del marco principal y del nodo objetivo
+    const trackRect = track.getBoundingClientRect();
+    const nodeRect = targetNode.getBoundingClientRect();
 
-        // Fórmula de centrado geométrico
-        const tokenWidth = 50;
-        const tokenHeight = 50;
+    // Centro del nodo en coordenadas absolutas
+    const nodeCenterX = nodeRect.left + (nodeRect.width / 2);
+    const nodeCenterY = nodeRect.top + (nodeRect.height / 2);
 
-        const nodeCenterX = nodeRect.left + (nodeRect.width / 2);
-        const nodeCenterY = nodeRect.top + (nodeRect.height / 2);
+    // Tamaño de la ficha
+    const tokenWidth = token.offsetWidth || 50;
+    const tokenHeight = token.offsetHeight || 50;
 
-        const exactLeft = nodeCenterX - trackRect.left - (tokenWidth / 2);
-        const exactTop = nodeCenterY - trackRect.top - (tokenHeight / 2);
+    // Distancia relativa exacta desde el origen de la pista (#track)
+    const exactLeft = nodeCenterX - trackRect.left - (tokenWidth / 2);
+    const exactTop = nodeCenterY - trackRect.top - (tokenHeight / 2);
 
-        token.style.transform = `translate3d(${exactLeft}px, ${exactTop}px, 0)`;
-      }
-    }
+    token.style.transform = `translate3d(${exactLeft}px, ${exactTop}px, 0)`;
+  }
+}
 
-    window.onload = () => { setTimeout(updateUI, 200); };
-    window.onresize = updateUI;
+window.onload = () => { setTimeout(updateUI, 200); };
+window.onresize = updateUI;
   </script>
 </body>
 </html>
