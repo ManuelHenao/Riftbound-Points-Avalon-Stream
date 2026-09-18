@@ -70,10 +70,7 @@
 
       box-sizing: border-box;
 
-      /* Punto de origen en el centro exacto */
-      transform-origin: center center;
-
-      /* Animación de entrada inicial: Expansión desde el centro */
+      /* Animación de entrada inicial */
       animation: scaleXExpand 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
@@ -84,7 +81,7 @@
       animation: scaleXExpand 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
-    /* ANIMACIÓN: Se abre horizontalmente desde el centro hacia los lados */
+    /* ANIMACIÓN: Se abre horizontalmente desde el centro */
     @keyframes scaleXExpand {
       0% {
         opacity: 0;
@@ -114,7 +111,7 @@
       box-sizing: border-box;
     }
 
-    /* NÚMERO 8 CENTRAL SOLO TEXTO (SIN ROMBO NI BORDES) */
+    /* NÚMERO 8 CENTRAL SOLO TEXTO */
     .node.center-goal {
       width: 80px;
       height: 80px;
@@ -331,7 +328,6 @@
       const track = document.getElementById('track');
       let targetNode;
 
-      // Definir tamaño esperado según la casilla objetivo antes de medir
       const tokenW = (value === 8) ? 100 : 70;
       const tokenH = (value === 8) ? 100 : 70;
 
@@ -345,43 +341,30 @@
       }
 
       if (targetNode && track) {
-        const trackRect = track.getBoundingClientRect();
-        const nodeRect = targetNode.getBoundingClientRect();
+        // Se usa offsetLeft/offsetTop para calcular la posición exacta
+        // relativa a .track ignorando cualquier transform o escala CSS
+        const targetX = targetNode.offsetLeft + (targetNode.offsetWidth / 2) - (tokenW / 2);
+        const targetY = targetNode.offsetTop + (targetNode.offsetHeight / 2) - (tokenH / 2);
 
-        const trackStyle = window.getComputedStyle(track);
-        const borderLeft = parseFloat(trackStyle.borderLeftWidth) || 0;
-        const borderTop = parseFloat(trackStyle.borderTopWidth) || 0;
-
-        const nodeCenterX = nodeRect.left + (nodeRect.width / 2);
-        const nodeCenterY = nodeRect.top + (nodeRect.height / 2);
-
-        // Usa las dimensiones directas independientemente de las animaciones CSS
-        const exactX = nodeCenterX - trackRect.left - borderLeft - (tokenW / 2);
-        const exactY = nodeCenterY - trackRect.top - borderTop - (tokenH / 2);
-
-        token.style.transform = `translate3d(${exactX}px, ${exactY}px, 0)`;
+        token.style.transform = `translate3d(${targetX}px, ${targetY}px, 0)`;
       }
     }
 
-    // Asegurar centrado al cargar todo y al cambiar tamaño
     window.addEventListener('load', () => {
       setTimeout(updateUI, 100);
     });
     window.addEventListener('resize', updateUI);
 
-    // Detección de visibilidad en OBS Studio
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) {
         const track = document.getElementById('track');
 
         if (track) {
-          // Reinicia la animación eliminando y reasignando la clase
           track.classList.remove('animate-in');
-          void track.offsetWidth; // Dispara un reflow en CSS
+          void track.offsetWidth;
           track.classList.add('animate-in');
         }
 
-        // Recalcula la posición de las fichas usando el objeto state
         setTimeout(updateUI, 50);
       }
     });
