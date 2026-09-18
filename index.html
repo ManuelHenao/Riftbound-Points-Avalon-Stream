@@ -56,10 +56,15 @@
       ) 1;
 
       box-sizing: border-box;
-
-      /* Inicialmente transparente e invisible para evitar que parpadee completa antes de animar */
       opacity: 0;
       transform: scaleX(0);
+    }
+
+    /* Clase para ocultar inmediatamente cuando OBS oculta la fuente */
+    .track.hidden-state {
+      opacity: 0 !important;
+      transform: scaleX(0) !important;
+      animation: none !important;
     }
 
     /* ANIMACIÓN: Pista se abre desde el centro */
@@ -195,7 +200,7 @@
 
   <!-- OVERLAY (OBS) -->
   <div id="overlay-container">
-    <div class="track" id="track">
+    <div class="track hidden-state" id="track">
       <div class="side" id="p1-nodes">
         <div class="node" data-val="0">0</div>
         <div class="node" data-val="1">1</div>
@@ -334,7 +339,6 @@
       }
     }
 
-    // Ubica las fichas inicialmente en el centro (nodo 8) sin animación
     function setInitialTokensAtCenter() {
       const goalNode = document.getElementById('goal-node');
       const track = document.getElementById('track');
@@ -355,17 +359,18 @@
     function playOpeningAnimation() {
       const track = document.getElementById('track');
 
-      // 1. Preparar las fichas en el centro ocultas
+      if (!track) return;
+
+      // 1. Asegurar fichas en el centro sin visibilidad
       setInitialTokensAtCenter();
 
-      // 2. Reiniciar la animación de apertura de la pista desde opacidad 0 de forma limpia
-      if (track) {
-        track.style.animation = 'none';
-        void track.offsetWidth; // Forzar reflow en el navegador
-        track.style.animation = 'scaleXExpand 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards';
-      }
+      // 2. Remover la clase de ocultamiento y activar animación
+      track.classList.remove('hidden-state');
+      track.style.animation = 'none';
+      void track.offsetWidth; // Reflow obligatorio
+      track.style.animation = 'scaleXExpand 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards';
 
-      // 3. Esperar apertura (0.4s) antes de desvelar y desplegar badges
+      // 3. Desplegar badges tras la apertura del riel
       setTimeout(() => {
         ['token-p1', 'token-p2'].forEach((tokenId) => {
           const token = document.getElementById(tokenId);
@@ -385,8 +390,18 @@
 
     window.addEventListener('resize', updateUI);
 
+    // CONTROL DE VISIBILIDAD DE OBS
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) {
+      const track = document.getElementById('track');
+
+      if (document.hidden) {
+        // En cuanto OBS oculta el elemento, lo regresamos inmediatamente al estado colapsado e invisible
+        if (track) {
+          track.classList.add('hidden-state');
+        }
+        setInitialTokensAtCenter();
+      } else {
+        // Cuando vuelve a mostrarse en OBS, ejecuta la animación desde cero de forma limpia
         playOpeningAnimation();
       }
     });
