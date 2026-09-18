@@ -8,146 +8,171 @@
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <style>
     body {
-      margin: 0;
-      padding: 0;
-      background-color: transparent;
-      font-family: 'Arial Black', sans-serif;
-      overflow: hidden;
-      user-select: none;
-    }
+  margin: 0;
+  padding: 0;
+  background-color: transparent;
+  font-family: 'Arial Black', sans-serif;
+  overflow: hidden;
+  user-select: none;
+}
 
-    #status-bar {
-      position: absolute;
-      top: 5px;
-      left: 5px;
-      font-family: sans-serif;
-      font-size: 12px;
-      color: #38bdf8;
-      background: rgba(15, 23, 42, 0.8);
-      padding: 4px 8px;
-      border-radius: 6px;
-      z-index: 100;
-    }
+#status-bar {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  font-family: sans-serif;
+  font-size: 12px;
+  color: #38bdf8;
+  background: rgba(15, 23, 42, 0.8);
+  padding: 4px 8px;
+  border-radius: 6px;
+  z-index: 100;
+}
 
-    /* OVERLAY (OBS) */
-    #overlay-container {
-      width: 100vw;
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      position: relative;
-    }
+/* 1. OVERLAY UBICADO ARRIBA CON MARGEN */
+#overlay-container {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start; /* Alinea el marcador arriba */
+  position: relative;
+}
 
-    .track {
-      position: relative;
-      display: flex;
-      align-items: center;
-      background: rgba(15, 23, 42, 0.85);
-      border: 3px solid #38bdf8;
-      border-radius: 50px;
-      padding: 10px 20px;
-      box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
-      box-sizing: border-box;
-    }
+/* 2. PISTA CON FONDO Y BORDES EN GRADIENTE DEGRADADO */
+.track {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-top: 30px; /* Espacio desde el borde superior de la pantalla */
+  padding: 10px 40px;
+  
+  /* Fondo negro con degradado de opacidad: 0% en extremos, 70% al centro */
+  background: linear-gradient(
+    90deg, 
+    rgba(0, 0, 0, 0) 0%, 
+    rgba(0, 0, 0, 0.7) 25%, 
+    rgba(0, 0, 0, 0.7) 75%, 
+    rgba(0, 0, 0, 0) 100%
+  );
 
-    .side { 
-      display: flex; 
-      gap: 15px; 
-    }
+  /* Solo bordes arriba y abajo */
+  border-top: 3px solid transparent;
+  border-bottom: 3px solid transparent;
+  border-left: none;
+  border-right: none;
 
-    /* NODOS / NÚMEROS */
-    .node {
-      width: 50px;
-      height: 50px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 24px;
-      color: #94a3b8;
-      font-weight: bold;
-      box-sizing: border-box;
-    }
+  /* Aplica degradado cian a los bordes superior e inferior */
+  border-image: linear-gradient(
+    90deg, 
+    rgba(56, 189, 248, 0) 0%, 
+    rgba(56, 189, 248, 0.8) 30%, 
+    rgba(56, 189, 248, 0.8) 70%, 
+    rgba(56, 189, 248, 0) 100%
+  ) 1;
 
-    .node.center-goal {
-      width: 65px;
-      height: 65px;
-      background: #eab308;
-      color: #0f172a;
-      border-radius: 50%;
-      font-size: 32px;
-      box-shadow: 0 0 15px #eab308;
-      margin: 0 15px;
-    }
+  box-sizing: border-box;
+}
 
-    /* FICHAS DE 70PX CON POSICIONAMIENTO FIJO AL ORIGEN DE LA PISTA */
-    .p-token {
-      position: absolute;
-      top: 0;
-      left: 0;
-      margin: 0 !important;
-      padding: 0 !important;
-      width: 70px;
-      height: 70px;
-      border-radius: 50%;
-      z-index: 10;
-      transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-      background-size: contain;
-      background-position: center;
-      background-repeat: no-repeat;
-      pointer-events: none;
-      box-sizing: border-box;
-    }
+.side { 
+  display: flex; 
+  gap: 15px; 
+}
 
-    #token-p1 {
-      background-image: url('faccion1.png'); /* Asegúrate de que exista en tu carpeta */
-      border: 2px solid #ef4444;
-      box-shadow: 0 0 12px #ef4444;
-    }
+/* NODOS / NÚMEROS NORMALES */
+.node {
+  width: 50px;
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 24px;
+  color: #94a3b8;
+  font-weight: bold;
+  box-sizing: border-box;
+}
 
-    #token-p2 {
-      background-image: url('faccion1.png'); /* Asegúrate de que exista en tu carpeta */
-      border: 2px solid #3b82f6;
-      box-shadow: 0 0 12px #3b82f6;
-    }
+/* 3. NÚMERO 8 CENTRAL MÁS GRANDE */
+.node.center-goal {
+  width: 80px;         /* Aumentado de 65px a 80px */
+  height: 80px;        /* Aumentado de 65px a 80px */
+  background: rgba(234, 179, 8, 0.2);
+  border: 3px solid #eab308;
+  color: #eab308;
+  border-radius: 50%;
+  font-size: 42px;     /* Aumentado de 32px a 42px */
+  box-shadow: 0 0 20px rgba(234, 179, 8, 0.5);
+  margin: 0 20px;
+}
 
-    /* VISTA CONTROLADOR (TELÉFONO) */
-    #controller-container {
-      display: none;
-      height: 100vh;
-      background: #0f172a;
-      color: white;
-      flex-direction: column;
-      justify-content: space-around;
-      align-items: center;
-      padding: 20px;
-      box-sizing: border-box;
-    }
+/* FICHAS DE 70PX CON CENTRADO */
+.p-token {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  z-index: 10;
+  transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  box-sizing: border-box;
+}
 
-    .p-control {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-      width: 100%;
-    }
+#token-p1 {
+  background-image: url('faccion1.png');
+  border: 2px solid #ef4444;
+  box-shadow: 0 0 12px #ef4444;
+}
 
-    .btn-group { display: flex; gap: 20px; }
+#token-p2 {
+  background-image: url('faccion1.png');
+  border: 2px solid #3b82f6;
+  box-shadow: 0 0 12px #3b82f6;
+}
 
-    button {
-      width: 80px;
-      height: 80px;
-      font-size: 36px;
-      font-weight: bold;
-      border: none;
-      border-radius: 15px;
-      color: white;
-      cursor: pointer;
-    }
+/* VISTA CONTROLADOR (TELÉFONO) */
+#controller-container {
+  display: none;
+  height: 100vh;
+  background: #0f172a;
+  color: white;
+  flex-direction: column;
+  justify-content: space-around;
+  align-items: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
 
-    .btn-p1 { background: #ef4444; }
-    .btn-p2 { background: #3b82f6; }
-    .score-disp { font-size: 48px; font-weight: bold; }
+.p-control {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.btn-group { display: flex; gap: 20px; }
+
+button {
+  width: 80px;
+  height: 80px;
+  font-size: 36px;
+  font-weight: bold;
+  border: none;
+  border-radius: 15px;
+  color: white;
+  cursor: pointer;
+}
+
+.btn-p1 { background: #ef4444; }
+.btn-p2 { background: #3b82f6; }
+.score-disp { font-size: 48px; font-weight: bold; }
   </style>
 </head>
 <body>
