@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Riftbound Score Track (Internet Sync)</title>
-  <!-- Librería gratuita para conexión P2P por Internet -->
+  <title>Riftbound Score Track</title>
+  <!-- Librería para conexión por Internet -->
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <style>
     body {
@@ -16,7 +16,6 @@
       user-select: none;
     }
 
-    /* ESTADO DE CONEXIÓN */
     #status-bar {
       position: absolute;
       top: 5px;
@@ -27,10 +26,10 @@
       background: rgba(15, 23, 42, 0.8);
       padding: 4px 8px;
       border-radius: 6px;
-      z-index: 10;
+      z-index: 100;
     }
 
-    /* OVERLAY EN OBS */
+    /* OVERLAY (OBS) */
     #overlay-container {
       width: 100vw;
       height: 100vh;
@@ -52,6 +51,7 @@
 
     .side { display: flex; gap: 15px; }
 
+    /* NODOS CON TAMAÑO FIJO CUADRADO */
     .node {
       width: 50px;
       height: 50px;
@@ -61,6 +61,8 @@
       font-size: 24px;
       color: #94a3b8;
       font-weight: bold;
+      transition: opacity 0.2s ease;
+      box-sizing: border-box;
     }
 
     .node.center-goal {
@@ -74,36 +76,40 @@
       margin: 0 15px;
     }
 
-    /* Configuración de las Fichas (Badges) */
-.p-token {
-  position: absolute;
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  z-index: 10;
-  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  box-shadow: 0 0 12px currentColor;
-}
+    /* OCULTA EL NÚMERO DEBAJO DE LA FICHA */
+    .node.is-active {
+      opacity: 0;
+    }
 
-/* Badge Jugador 1 */
-#token-p1 {
-  background-image: url('faccion1.png'); /* Tu logo PNG */
-  color: #ef4444;
-  border: 2px solid #ef4444;
-}
+    /* FICHAS / BADGES (TAMAÑO COINCIDENTE DE 50PX) */
+    .p-token {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      z-index: 10;
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      pointer-events: none;
+    }
 
-/* Badge Jugador 2 */
-#token-p2 {
-  background-image: url('faccion2.png'); /* Tu logo PNG */
-  color: #3b82f6;
-  border: 2px solid #3b82f6;
-}
+    #token-p1 {
+      background-image: url('faccion1.png'); /* Reemplaza con tu archivo o URL */
+      border: 2px solid #ef4444;
+      box-shadow: 0 0 12px #ef4444;
+    }
 
+    #token-p2 {
+      background-image: url('faccion2.png'); /* Reemplaza con tu archivo o URL */
+      border: 2px solid #3b82f6;
+      box-shadow: 0 0 12px #3b82f6;
+    }
 
-    /* CONTROL EN EL TELÉFONO */
+    /* VISTA CONTROLADOR (TELÉFONO) */
     #controller-container {
       display: none;
       height: 100vh;
@@ -201,10 +207,11 @@
     </div>
   </div>
 
+  <!-- AQUÍ INICIA EL JAVASCRIPT -->
   <script>
     let state = { p1: 0, p2: 0 };
     const urlParams = new URLSearchParams(window.location.search);
-    const room = urlParams.get('room') || 'riftbound-123'; // ID de sala por defecto
+    const room = urlParams.get('room') || 'riftbound-123';
     const isControl = urlParams.has('control');
     const statusBar = document.getElementById('status-bar');
 
@@ -213,33 +220,28 @@
       document.getElementById('controller-container').style.display = 'flex';
     }
 
-    // Configuración de Conexión por Internet usando PeerJS
     let peer, conn;
 
     if (isControl) {
-      // El teléfono se conecta al PC
       peer = new Peer();
       peer.on('open', () => {
-        statusBar.innerText = "Conectando con OBS...";
+        statusBar.innerText = "Conectando...";
         conn = peer.connect('obs-' + room);
-        
         conn.on('open', () => {
-          statusBar.innerText = "Conectado a OBS por Internet";
+          statusBar.innerText = "Conectado por Internet";
           statusBar.style.color = "#4ade80";
         });
       });
     } else {
-      // OBS escucha las conexiones del teléfono
       peer = new Peer('obs-' + room);
-      peer.on('open', (id) => {
-        statusBar.innerText = "OBS listo. Esperando al celular...";
+      peer.on('open', () => {
+        statusBar.innerText = "OBS Listo. Esperando al celular...";
       });
 
       peer.on('connection', (c) => {
         conn = c;
         statusBar.innerText = "Celular conectado";
         statusBar.style.color = "#4ade80";
-        
         conn.on('data', (data) => {
           state = data;
           updateUI();
@@ -267,12 +269,17 @@
         return;
       }
 
-      moveToken('token-p1', 'p1-nodes', state.p1);
-      moveToken('token-p2', 'p2-nodes', state.p2);
+      // Restablecer transparencia de todos los números
+      document.querySelectorAll('.node').forEach(n => n.classList.remove('is-active'));
+
+      // Posicionar e invisibilizar número objetivo
+      moveAndHideNumber('token-p1', 'p1-nodes', state.p1);
+      moveAndHideNumber('token-p2', 'p2-nodes', state.p2);
     }
 
-    function moveToken(tokenId, containerId, value) {
+    function moveAndHideNumber(tokenId, containerId, value) {
       const token = document.getElementById(tokenId);
+      const track = document.getElementById('track');
       let targetNode;
 
       if (value === 8) {
@@ -282,14 +289,23 @@
         targetNode = container.querySelector(`[data-val="${value}"]`);
       }
 
-      if (targetNode) {
-        const trackRect = document.getElementById('track').getBoundingClientRect();
+      if (targetNode && track) {
+        targetNode.classList.add('is-active');
+
+        const trackRect = track.getBoundingClientRect();
         const nodeRect = targetNode.getBoundingClientRect();
 
-        const leftPos = nodeRect.left - trackRect.left + (nodeRect.width / 2) - 23;
-        const topPos = nodeRect.top - trackRect.top + (nodeRect.height / 2) - 23;
+        // Fórmula de centrado geométrico
+        const tokenWidth = 50;
+        const tokenHeight = 50;
 
-        token.style.transform = `translate(${leftPos}px, ${topPos}px)`;
+        const nodeCenterX = nodeRect.left + (nodeRect.width / 2);
+        const nodeCenterY = nodeRect.top + (nodeRect.height / 2);
+
+        const exactLeft = nodeCenterX - trackRect.left - (tokenWidth / 2);
+        const exactTop = nodeCenterY - trackRect.top - (tokenHeight / 2);
+
+        token.style.transform = `translate3d(${exactLeft}px, ${exactTop}px, 0)`;
       }
     }
 
