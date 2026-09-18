@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Riftbound Score Track</title>
-  <!-- Librería para conexión por Internet -->
+  <!-- Librería PeerJS -->
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <style>
     body {
@@ -36,10 +36,11 @@
       display: flex;
       justify-content: center;
       align-items: center;
+      position: relative;
     }
 
     .track {
-      position: relative !important;
+      position: relative;
       display: flex;
       align-items: center;
       background: rgba(15, 23, 42, 0.85);
@@ -50,9 +51,12 @@
       box-sizing: border-box;
     }
 
-    .side { display: flex; gap: 15px; }
+    .side { 
+      display: flex; 
+      gap: 15px; 
+    }
 
-    /* NODOS CON TAMAÑO FIJO CUADRADO */
+    /* NODOS / NÚMEROS */
     .node {
       width: 50px;
       height: 50px;
@@ -62,7 +66,6 @@
       font-size: 24px;
       color: #94a3b8;
       font-weight: bold;
-      transition: opacity 0.2s ease;
       box-sizing: border-box;
     }
 
@@ -77,14 +80,15 @@
       margin: 0 15px;
     }
 
-    /* FICHAS / BADGES (TAMAÑO COINCIDENTE DE 50PX) */
+    /* FICHAS DE 70PX CON POSICIONAMIENTO FIJO AL ORIGEN DE LA PISTA */
     .p-token {
-      position: absolute !important;
-      top: 0 !important;
-      left: 0 !important;
+      position: absolute;
+      top: 0;
+      left: 0;
       margin: 0 !important;
-      width: 70px !important;
-      height: 70px !important;
+      padding: 0 !important;
+      width: 70px;
+      height: 70px;
       border-radius: 50%;
       z-index: 10;
       transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
@@ -96,13 +100,13 @@
     }
 
     #token-p1 {
-      background-image: url('faccion1.png'); /* Reemplaza con tu archivo o URL */
+      background-image: url('faccion1.png'); /* Asegúrate de que exista en tu carpeta */
       border: 2px solid #ef4444;
       box-shadow: 0 0 12px #ef4444;
     }
 
     #token-p2 {
-      background-image: url('faccion1.png'); /* Reemplaza con tu archivo o URL */
+      background-image: url('faccion2.png'); /* Asegúrate de que exista en tu carpeta */
       border: 2px solid #3b82f6;
       box-shadow: 0 0 12px #3b82f6;
     }
@@ -205,109 +209,109 @@
     </div>
   </div>
 
-  <!-- AQUÍ INICIA EL JAVASCRIPT -->
   <script>
     let state = { p1: 0, p2: 0 };
-const urlParams = new URLSearchParams(window.location.search);
-const room = urlParams.get('room') || 'riftbound-123';
-const isControl = urlParams.has('control');
-const statusBar = document.getElementById('status-bar');
+    const urlParams = new URLSearchParams(window.location.search);
+    const room = urlParams.get('room') || 'riftbound-123';
+    const isControl = urlParams.has('control');
+    const statusBar = document.getElementById('status-bar');
 
-if (isControl) {
-  document.getElementById('overlay-container').style.display = 'none';
-  document.getElementById('controller-container').style.display = 'flex';
-}
+    if (isControl) {
+      document.getElementById('overlay-container').style.display = 'none';
+      document.getElementById('controller-container').style.display = 'flex';
+    }
 
-let peer, conn;
+    let peer, conn;
 
-if (isControl) {
-  peer = new Peer();
-  peer.on('open', () => {
-    statusBar.innerText = "Conectando...";
-    conn = peer.connect('obs-' + room);
-    conn.on('open', () => {
-      statusBar.innerText = "Conectado por Internet";
-      statusBar.style.color = "#4ade80";
-    });
-  });
-} else {
-  peer = new Peer('obs-' + room);
-  peer.on('open', () => {
-    statusBar.innerText = "OBS Listo. Esperando al celular...";
-  });
+    if (isControl) {
+      peer = new Peer();
+      peer.on('open', () => {
+        statusBar.innerText = "Conectando...";
+        conn = peer.connect('obs-' + room);
+        conn.on('open', () => {
+          statusBar.innerText = "Conectado por Internet";
+          statusBar.style.color = "#4ade80";
+        });
+      });
+    } else {
+      peer = new Peer('obs-' + room);
+      peer.on('open', () => {
+        statusBar.innerText = "OBS Listo. Esperando al celular...";
+      });
 
-  peer.on('connection', (c) => {
-    conn = c;
-    statusBar.innerText = "Celular conectado";
-    statusBar.style.color = "#4ade80";
-    conn.on('data', (data) => {
-      state = data;
+      peer.on('connection', (c) => {
+        conn = c;
+        statusBar.innerText = "Celular conectado";
+        statusBar.style.color = "#4ade80";
+        conn.on('data', (data) => {
+          state = data;
+          updateUI();
+        });
+      });
+    }
+
+    function changeScore(player, delta) {
+      if (player === 1) {
+        state.p1 = Math.min(8, Math.max(0, state.p1 + delta));
+      } else {
+        state.p2 = Math.min(8, Math.max(0, state.p2 + delta));
+      }
+
+      if (conn && conn.open) {
+        conn.send(state);
+      }
       updateUI();
+    }
+
+    function updateUI() {
+      if (isControl) {
+        document.getElementById('p1-score-txt').innerText = state.p1;
+        document.getElementById('p2-score-txt').innerText = state.p2;
+        return;
+      }
+
+      moveTokenCentered('token-p1', 'p1-nodes', state.p1);
+      moveTokenCentered('token-p2', 'p2-nodes', state.p2);
+    }
+
+    function moveTokenCentered(tokenId, containerId, value) {
+      const token = document.getElementById(tokenId);
+      const track = document.getElementById('track');
+      let targetNode;
+
+      if (value === 8) {
+        targetNode = document.getElementById('goal-node');
+      } else {
+        const container = document.getElementById(containerId);
+        targetNode = container.querySelector(`[data-val="${value}"]`);
+      }
+
+      if (targetNode && track) {
+        // Coordenadas globales de pantalla (Viewport)
+        const trackRect = track.getBoundingClientRect();
+        const nodeRect = targetNode.getBoundingClientRect();
+
+        // Ancho/Alto real de la ficha (70px) y del nodo objetivo
+        const tokenW = token.offsetWidth || 70;
+        const tokenH = token.offsetHeight || 70;
+
+        // Cálculo del centro exacto del número objetivo relativo al borde exterior de #track
+        const nodeCenterX = nodeRect.left + (nodeRect.width / 2);
+        const nodeCenterY = nodeRect.top + (nodeRect.height / 2);
+
+        // Posición final para alinear el centro de la ficha de 70px sobre el centro del nodo
+        const exactX = nodeCenterX - trackRect.left - (tokenW / 2);
+        const exactY = nodeCenterY - trackRect.top - (tokenH / 2);
+
+        token.style.transform = `translate3d(${exactX}px, ${exactY}px, 0)`;
+      }
+    }
+
+    // Asegurar centrado al cargar todo y al cambiar tamaño
+    window.addEventListener('load', () => {
+      setTimeout(updateUI, 100);
     });
-  });
-}
-
-function changeScore(player, delta) {
-  if (player === 1) {
-    state.p1 = Math.min(8, Math.max(0, state.p1 + delta));
-  } else {
-    state.p2 = Math.min(8, Math.max(0, state.p2 + delta));
-  }
-
-  if (conn && conn.open) {
-    conn.send(state);
-  }
-  updateUI();
-}
-
-function updateUI() {
-  if (isControl) {
-    document.getElementById('p1-score-txt').innerText = state.p1;
-    document.getElementById('p2-score-txt').innerText = state.p2;
-    return;
-  }
-
-  // Posicionar las fichas sobre los números manteniendo el número visible
-  moveTokenCentered('token-p1', 'p1-nodes', state.p1);
-  moveTokenCentered('token-p2', 'p2-nodes', state.p2);
-}
-
-function moveTokenCentered(tokenId, containerId, value) {
-  const token = document.getElementById(tokenId);
-  const track = document.getElementById('track');
-  let targetNode;
-
-  if (value === 8) {
-    targetNode = document.getElementById('goal-node');
-  } else {
-    const container = document.getElementById(containerId);
-    targetNode = container.querySelector(`[data-val="${value}"]`);
-  }
-
-  if (targetNode && track) {
-    // 1. Obtener rectángulos exactos en pantalla
-    const trackRect = track.getBoundingClientRect();
-    const nodeRect = targetNode.getBoundingClientRect();
-
-    // 2. Obtener el tamaño real del token (los 70px que configuraste)
-    const tokenWidth = token.offsetWidth || 70;
-    const tokenHeight = token.offsetHeight || 70;
-
-    // 3. Encontrar el punto central exacto del número objetivo
-    const nodeCenterX = nodeRect.left + (nodeRect.width / 2);
-    const nodeCenterY = nodeRect.top + (nodeRect.height / 2);
-
-    // 4. Calcular la esquina superior izquierda donde debe ir el token para que sus centros coincidan
-    const exactLeft = nodeCenterX - trackRect.left - (tokenWidth / 2);
-    const exactTop = nodeCenterY - trackRect.top - (tokenHeight / 2);
-
-    // 5. Aplicar la posición
-    token.style.transform = `translate3d(${Math.round(exactLeft)}px, ${Math.round(exactTop)}px, 0)`;
-  }
-}
-
-window.onload = () => { setTimeout(updateUI, 200); };
-window.onresize = updateUI;
+    window.addEventListener('resize', updateUI);
   </script>
 </body>
 </html>
