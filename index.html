@@ -70,26 +70,29 @@
 
       box-sizing: border-box;
 
-      /* Animación de entrada inicial */
-      animation: slideDownFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      /* Punto de origen en el centro exacto */
+      transform-origin: center center;
+
+      /* Animación de entrada inicial: Expansión desde el centro */
+      animation: scaleXExpand 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
     /* REGLA PARA REINICIAR ANIMACIÓN CON JS */
     .track.animate-in {
       animation: none;
       /* Fuerza el 'reflow' del navegador */
-      animation: slideDownFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      animation: scaleXExpand 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
-    /* ANIMACIÓN: Desciende suavemente desde arriba y aparece */
-    @keyframes slideDownFade {
+    /* ANIMACIÓN: Se abre horizontalmente desde el centro hacia los lados */
+    @keyframes scaleXExpand {
       0% {
         opacity: 0;
-        transform: translateY(-30px);
+        transform: scaleX(0);
       }
       100% {
         opacity: 1;
-        transform: translateY(0);
+        transform: scaleX(1);
       }
     }
 
