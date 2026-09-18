@@ -90,13 +90,13 @@
       gap: 10px; 
     }
 
-    /* NODOS / NÚMEROS NORMALES (0 AL 7) CON CÍRCULO DELINEADO */
+    /* NODOS / NÚMEROS NORMALES (0 AL 7) CON CÍRCULO DELINEADO Y FONDO NEGRO 20% */
     .node {
       width: 34px;
       height: 34px;
       border-radius: 50%;
       border: 2px solid rgba(206, 60, 53, 0.9);
-      background: transparent;
+      background: rgba(0, 0, 0, 0.2);
       display: flex;
       justify-content: center;
       align-items: center;
@@ -110,18 +110,13 @@
       transition: border-color 0.3s ease;
     }
 
-    /* SI LA FICHA ESTÁ ENCIMA DEL NODO: CÍRCULO INVISIBLE */
-    .node.occupied {
-      border-color: transparent !important;
-    }
-
-    /* NÚMERO 8 CENTRAL (MÁS GRANDE CON BORDE DE 4PX) */
+    /* NÚMERO 8 CENTRAL (BORDE DE 4PX, COLOR ROJO BASE Y FONDO NEGRO 20%) */
     .node.center-goal {
       width: 46px;
       height: 46px;
       border-radius: 50%;
       border: 4px solid rgba(206, 60, 53, 0.9);
-      background: transparent;
+      background: rgba(0, 0, 0, 0.2);
       color: #ffffff;
       font-size: 28px;
       font-weight: 900;
@@ -132,8 +127,13 @@
       align-items: center;
       position: relative;
       z-index: 2;
-      transition: color 0.4s ease, border-color 0.4s ease;
+      transition: border-color 0.4s ease;
       box-sizing: border-box;
+    }
+
+    /* SI LA FICHA ESTÁ ENCIMA DEL NODO: SOLO DESAPARECE EL BORDE, CONSERVA EL RELLENO */
+    .node.occupied {
+      border-color: transparent !important;
     }
 
     /* ÚNICAMENTE EL NÚMERO 8 CAMBIA SU BORDE A BLANCO AL CONECTAR EL TELÉFONO */
@@ -322,7 +322,7 @@
         conn = c;
         const goalNode = document.getElementById('goal-node');
 
-        // Solamente se añade la clase connected al nodo 8
+        // Solamente se añade la clase connected al nodo 8 para volver blanco su borde
         if (goalNode) goalNode.classList.add('connected');
 
         conn.on('data', (data) => {
