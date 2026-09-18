@@ -58,7 +58,7 @@
 
       box-sizing: border-box;
 
-      /* Estado base oculto mediante recorte de ancho desde el centro */
+      /* Estado inicial cerrado */
       max-width: 0px;
       opacity: 0;
       overflow: hidden;
@@ -66,9 +66,9 @@
       transition: max-width 0.3s ease-in, opacity 0.2s ease-in;
     }
 
-    /* ANIMACIÓN DE ENTRADA (Abre el ancho de la pista progresivamente) */
+    /* ANIMACIÓN DE ENTRADA */
     .track.show-track {
-      max-width: 1200px; /* Ancho suficiente para desplegar toda la pista */
+      max-width: 1200px;
       opacity: 1;
       transition: max-width 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease-out;
     }
@@ -326,7 +326,8 @@
         token.classList.remove('is-goal');
       }
 
-      if (targetNode && track) {
+      // Validar que el nodo tenga dimensiones calculadas por el DOM antes de mover
+      if (targetNode && track && targetNode.offsetWidth > 0) {
         const targetX = targetNode.offsetLeft + (targetNode.offsetWidth / 2) - (tokenW / 2);
         const targetY = targetNode.offsetTop + (targetNode.offsetHeight / 2) - (tokenH / 2);
 
@@ -340,7 +341,7 @@
 
       ['token-p1', 'token-p2'].forEach((tokenId) => {
         const token = document.getElementById(tokenId);
-        if (goalNode && track && token) {
+        if (goalNode && track && token && goalNode.offsetWidth > 0) {
           const initialX = goalNode.offsetLeft + (goalNode.offsetWidth / 2) - 35;
           const initialY = goalNode.offsetTop + (goalNode.offsetHeight / 2) - 35;
 
@@ -351,20 +352,24 @@
       });
     }
 
-    // ANIMACIÓN DE ENTRADA
+    // ANIMACIÓN DE ENTRADA CORREGIDA
     function playInAnimation() {
       if (isControl) return;
       const track = document.getElementById('track');
       if (!track) return;
 
-      // Colocar las fichas ocultas en el nodo central
-      setInitialTokensAtCenter();
+      // Resetear la clase y forzar reflow explícito en OBS
+      track.classList.remove('show-track');
+      void track.offsetWidth;
 
-      // Abrir la pista desplegando el ancho (max-width)
+      // Agregar clase para abrir la pista
       track.classList.add('show-track');
 
-      // Revelar y mover las fichas hacia sus puntajes
+      // Esperar a que la pista termine de desplegarse antes de ubicar badges
       setTimeout(() => {
+        setInitialTokensAtCenter();
+        updateUI();
+
         ['token-p1', 'token-p2'].forEach((tokenId) => {
           const token = document.getElementById(tokenId);
           if (token) {
@@ -372,8 +377,7 @@
             token.classList.add('visible');
           }
         });
-        updateUI();
-      }, 350);
+      }, 400); // Sincronizado con la animación CSS de la pista
     }
 
     // ANIMACIÓN DE SALIDA
@@ -390,7 +394,7 @@
         }
       });
 
-      // 2. Colapsar la pista al centro rápidamente
+      // 2. Cerrar la pista
       track.classList.remove('show-track');
     }
 
@@ -412,14 +416,15 @@
       };
     }
 
-    // Evento estándar para navegador
+    // Evento estándar para navegador web
     document.addEventListener('visibilitychange', () => {
       handleVisibility(!document.hidden);
     });
 
     window.addEventListener('load', () => {
       if (!isControl) {
-        setTimeout(playInAnimation, 50);
+        // Retraso de seguridad post-carga para permitir que OBS renderice el DOM
+        setTimeout(playInAnimation, 200);
       }
     });
 
