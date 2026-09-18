@@ -31,7 +31,6 @@
       position: relative;
       display: flex;
       align-items: center;
-      justify-content: center;
       margin-top: 30px;
       padding: 10px 40px;
 
@@ -57,20 +56,25 @@
       ) 1;
 
       box-sizing: border-box;
-
-      /* Estado inicial cerrado */
-      max-width: 0px;
       opacity: 0;
-      overflow: hidden;
-      white-space: nowrap;
-      transition: max-width 0.3s ease-in, opacity 0.2s ease-in;
+      transform: scaleX(0);
+      transform-origin: center center;
     }
 
     /* ANIMACIÓN DE ENTRADA */
-    .track.show-track {
-      max-width: 1200px;
-      opacity: 1;
-      transition: max-width 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease-out;
+    .track.anim-in {
+      animation: scaleXExpand 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes scaleXExpand {
+      0% {
+        opacity: 0;
+        transform: scaleX(0);
+      }
+      100% {
+        opacity: 1;
+        transform: scaleX(1);
+      }
     }
 
     .side { 
@@ -89,7 +93,6 @@
       color: #94a3b8;
       font-weight: bold;
       box-sizing: border-box;
-      flex-shrink: 0;
     }
 
     /* NÚMERO 8 CENTRAL */
@@ -103,7 +106,6 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      flex-shrink: 0;
       transition: color 0.4s ease;
     }
 
@@ -326,8 +328,7 @@
         token.classList.remove('is-goal');
       }
 
-      // Validar que el nodo tenga dimensiones calculadas por el DOM antes de mover
-      if (targetNode && track && targetNode.offsetWidth > 0) {
+      if (targetNode && track) {
         const targetX = targetNode.offsetLeft + (targetNode.offsetWidth / 2) - (tokenW / 2);
         const targetY = targetNode.offsetTop + (targetNode.offsetHeight / 2) - (tokenH / 2);
 
@@ -341,7 +342,7 @@
 
       ['token-p1', 'token-p2'].forEach((tokenId) => {
         const token = document.getElementById(tokenId);
-        if (goalNode && track && token && goalNode.offsetWidth > 0) {
+        if (goalNode && track && token) {
           const initialX = goalNode.offsetLeft + (goalNode.offsetWidth / 2) - 35;
           const initialY = goalNode.offsetTop + (goalNode.offsetHeight / 2) - 35;
 
@@ -352,24 +353,18 @@
       });
     }
 
-    // ANIMACIÓN DE ENTRADA CORREGIDA
     function playInAnimation() {
       if (isControl) return;
       const track = document.getElementById('track');
       if (!track) return;
 
-      // Resetear la clase y forzar reflow explícito en OBS
-      track.classList.remove('show-track');
-      void track.offsetWidth;
+      setInitialTokensAtCenter();
 
-      // Agregar clase para abrir la pista
-      track.classList.add('show-track');
+      track.classList.remove('anim-in');
+      void track.offsetWidth; // Force Reflow
+      track.classList.add('anim-in');
 
-      // Esperar a que la pista termine de desplegarse antes de ubicar badges
       setTimeout(() => {
-        setInitialTokensAtCenter();
-        updateUI();
-
         ['token-p1', 'token-p2'].forEach((tokenId) => {
           const token = document.getElementById(tokenId);
           if (token) {
@@ -377,54 +372,13 @@
             token.classList.add('visible');
           }
         });
-      }, 400); // Sincronizado con la animación CSS de la pista
+        updateUI();
+      }, 350);
     }
-
-    // ANIMACIÓN DE SALIDA
-    function playOutAnimation() {
-      if (isControl) return;
-      const track = document.getElementById('track');
-      if (!track) return;
-
-      // 1. Ocultar badges
-      ['token-p1', 'token-p2'].forEach((tokenId) => {
-        const token = document.getElementById(tokenId);
-        if (token) {
-          token.classList.remove('visible');
-        }
-      });
-
-      // 2. Cerrar la pista
-      track.classList.remove('show-track');
-    }
-
-    function handleVisibility(visible) {
-      if (visible) {
-        playInAnimation();
-      } else {
-        playOutAnimation();
-      }
-    }
-
-    // Eventos nativos de OBS Studio
-    if (window.obsstudio) {
-      window.obsstudio.onVisibilityChange = function(visibility) {
-        handleVisibility(visibility);
-      };
-      window.obsstudio.onActiveChange = function(active) {
-        handleVisibility(active);
-      };
-    }
-
-    // Evento estándar para navegador web
-    document.addEventListener('visibilitychange', () => {
-      handleVisibility(!document.hidden);
-    });
 
     window.addEventListener('load', () => {
       if (!isControl) {
-        // Retraso de seguridad post-carga para permitir que OBS renderice el DOM
-        setTimeout(playInAnimation, 200);
+        playInAnimation();
       }
     });
 
