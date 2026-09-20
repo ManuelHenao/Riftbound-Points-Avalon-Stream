@@ -188,28 +188,27 @@
       transition: border-color 0.3s ease, color 0.3s ease;
     }
 
-    /* NÚMERO 8 CENTRAL - DESCONECTADO (Círculo blanco, Número rojo) */
+    /* NÚMERO 8 CENTRAL - DESCONECTADO (Borde blanco, Número 8 rojo, sin relleno) */
     .node.center-goal {
       border-radius: 50%;
       border-style: solid;
       border-color: #ffffff;
-      background: #ffffff;
+      background: rgba(0, 0, 0, 0.2);
       color: #ce3c35;
       font-weight: 900;
-      text-shadow: none;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9);
       display: flex;
       justify-content: center;
       align-items: center;
       position: relative;
       z-index: 2;
-      transition: border-color 0.4s ease, background-color 0.4s ease, color 0.4s ease;
+      transition: border-color 0.4s ease, color 0.4s ease;
       box-sizing: border-box;
     }
 
-    /* NÚMERO 8 CENTRAL - CONECTADO (Círculo rojo, Número blanco) */
+    /* NÚMERO 8 CENTRAL - CONECTADO (Borde rojo, Número 8 blanco, sin relleno) */
     .node.center-goal.connected {
       border-color: #ce3c35;
-      background: #ce3c35;
       color: #ffffff;
       text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.9);
     }
