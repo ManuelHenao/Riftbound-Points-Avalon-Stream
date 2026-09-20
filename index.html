@@ -376,29 +376,39 @@
     }
 
     let peer;
-    let connections = []; // Mantiene registro de múltiples conexiones si es necesario
+    let activeConnections = [];
 
     if (isControl) {
       peer = new Peer();
-      let conn;
       peer.on('open', () => {
-        conn = peer.connect('obs-' + room);
+        // El teléfono busca conectar a ambas vistas (horizontal y vertical)
+        connectToOverlay('obs-' + room + '-horizontal');
+        connectToOverlay('obs-' + room + '-vertical');
       });
 
+      function connectToOverlay(targetPeerId) {
+        const c = peer.connect(targetPeerId);
+        c.on('open', () => {
+          activeConnections.push(c);
+          c.send(state); // Envía el estado actual inmediatamente
+        });
+        c.on('close', () => {
+          activeConnections = activeConnections.filter(conn => conn !== c);
+        });
+      }
+
       window.sendToObs = function(data) {
-        if (conn && conn.open) {
-          conn.send(data);
-        }
+        activeConnections.forEach(c => {
+          if (c && c.open) c.send(data);
+        });
       };
     } else {
-      // Si usas el mismo peer ID para múltiples instancias de OBS localmente,
-      // PeerJS maneja las conexiones entrantes al mismo ID 'obs-' + room.
-      peer = new Peer('obs-' + room);
+      // Asigna un ID único según el tipo de layout
+      const overlayId = 'obs-' + room + '-' + layout;
+      peer = new Peer(overlayId);
 
       peer.on('connection', (c) => {
-        connections.push(c);
         const goalNode = document.getElementById('goal-node');
-
         if (goalNode) goalNode.classList.add('connected');
 
         c.on('data', (data) => {
@@ -407,10 +417,7 @@
         });
 
         c.on('close', () => {
-          connections = connections.filter(conn => conn !== c);
-          if (connections.length === 0 && goalNode) {
-            goalNode.classList.remove('connected');
-          }
+          if (goalNode) goalNode.classList.remove('connected');
         });
       });
     }
