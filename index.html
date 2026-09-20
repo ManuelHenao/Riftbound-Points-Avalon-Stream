@@ -31,7 +31,7 @@
       position: relative;
     }
 
-    /* === LAYOUT HORIZONTAL (MÁS GRANDE Y PROPORCIONAL) === */
+    /* === LAYOUT HORIZONTAL (TAMAÑO ORIGINAL COMPACTO) === */
     #overlay-container.layout-horizontal {
       justify-content: center;
       align-items: flex-start;
@@ -40,8 +40,8 @@
     #overlay-container.layout-horizontal .track {
       flex-direction: row;
       margin-top: 0;
-      padding: 0 45px;
-      height: 75px;
+      padding: 0 30px;
+      height: 50px;
       width: auto;
 
       background: linear-gradient(
@@ -52,7 +52,7 @@
         rgba(0, 0, 0, 0) 100%
       );
 
-      border-bottom: 4px solid transparent;
+      border-bottom: 3px solid transparent;
       border-image: linear-gradient(
         90deg, 
         rgba(206, 60, 53, 0) 0%, 
@@ -66,22 +66,22 @@
 
     #overlay-container.layout-horizontal .side {
       flex-direction: row;
-      gap: 15px;
+      gap: 10px;
     }
 
     #overlay-container.layout-horizontal .node {
-      width: 52px;
-      height: 52px;
-      border-width: 3px;
-      font-size: 30px;
+      width: 34px;
+      height: 34px;
+      border-width: 2px;
+      font-size: 20px;
     }
 
     #overlay-container.layout-horizontal .node.center-goal {
-      width: 68px;
-      height: 68px;
-      border-width: 5px;
-      font-size: 40px;
-      margin: 0 22px;
+      width: 46px;
+      height: 46px;
+      border-width: 4px;
+      font-size: 28px;
+      margin: 0 15px;
     }
 
     @keyframes scaleXExpand {
@@ -89,7 +89,7 @@
       100% { opacity: 1; transform: scaleX(1); }
     }
 
-    /* === LAYOUT VERTICAL (TAMAÑO TIKTOK/SHORTS) === */
+    /* === LAYOUT VERTICAL (MÁS GRANDE Y PROPORCIONAL) === */
     #overlay-container.layout-vertical {
       justify-content: flex-end;
       align-items: center;
@@ -98,8 +98,8 @@
     #overlay-container.layout-vertical .track {
       flex-direction: column;
       margin-right: 0;
-      padding: 30px 0;
-      width: 50px;
+      padding: 45px 0;
+      width: 75px;
       height: auto;
 
       background: linear-gradient(
@@ -110,7 +110,7 @@
         rgba(0, 0, 0, 0) 100%
       );
 
-      border-left: 3px solid transparent;
+      border-left: 4px solid transparent;
       border-image: linear-gradient(
         180deg, 
         rgba(206, 60, 53, 0) 0%, 
@@ -124,22 +124,22 @@
 
     #overlay-container.layout-vertical .side {
       flex-direction: column;
-      gap: 10px;
+      gap: 15px;
     }
 
     #overlay-container.layout-vertical .node {
-      width: 34px;
-      height: 34px;
-      border-width: 2px;
-      font-size: 20px;
+      width: 52px;
+      height: 52px;
+      border-width: 3px;
+      font-size: 30px;
     }
 
     #overlay-container.layout-vertical .node.center-goal {
-      width: 46px;
-      height: 46px;
-      border-width: 4px;
-      font-size: 28px;
-      margin: 15px 0;
+      width: 68px;
+      height: 68px;
+      border-width: 5px;
+      font-size: 40px;
+      margin: 22px 0;
     }
 
     @keyframes scaleYExpand {
@@ -504,15 +504,14 @@
       const track = document.getElementById('track');
       let targetNode;
 
-      // Calcular dimensiones dinámicas según el layout
-      const isHoriz = layout === 'horizontal';
-      let tokenW = isHoriz ? 64 : 42;
-      let tokenH = isHoriz ? 64 : 42;
+      const isVert = layout === 'vertical';
+      let tokenW = isVert ? 64 : 42;
+      let tokenH = isVert ? 64 : 42;
 
       if (value === 8) {
         targetNode = document.getElementById('goal-node');
-        tokenW = isHoriz ? 78 : 54;
-        tokenH = isHoriz ? 78 : 54;
+        tokenW = isVert ? 78 : 54;
+        tokenH = isVert ? 78 : 54;
       } else {
         const container = document.getElementById(containerId);
         targetNode = container.querySelector(`[data-val="${value}"]`);
@@ -532,8 +531,8 @@
     function setInitialTokensAtCenter() {
       const goalNode = document.getElementById('goal-node');
       const track = document.getElementById('track');
-      const isHoriz = layout === 'horizontal';
-      const initRadius = isHoriz ? 32 : 21;
+      const isVert = layout === 'vertical';
+      const initRadius = isVert ? 32 : 21;
 
       ['token-p1', 'token-p2'].forEach((tokenId) => {
         const token = document.getElementById(tokenId);
