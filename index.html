@@ -31,7 +31,7 @@
       position: relative;
     }
 
-    /* === LAYOUT HORIZONTAL (POR DEFECTO) === */
+    /* === LAYOUT HORIZONTAL (MÁS GRANDE Y PROPORCIONAL) === */
     #overlay-container.layout-horizontal {
       justify-content: center;
       align-items: flex-start;
@@ -40,8 +40,8 @@
     #overlay-container.layout-horizontal .track {
       flex-direction: row;
       margin-top: 0;
-      padding: 0 30px;
-      height: 50px;
+      padding: 0 45px;
+      height: 75px;
       width: auto;
 
       background: linear-gradient(
@@ -52,7 +52,7 @@
         rgba(0, 0, 0, 0) 100%
       );
 
-      border-bottom: 3px solid transparent;
+      border-bottom: 4px solid transparent;
       border-image: linear-gradient(
         90deg, 
         rgba(206, 60, 53, 0) 0%, 
@@ -66,11 +66,22 @@
 
     #overlay-container.layout-horizontal .side {
       flex-direction: row;
-      gap: 10px;
+      gap: 15px;
+    }
+
+    #overlay-container.layout-horizontal .node {
+      width: 52px;
+      height: 52px;
+      border-width: 3px;
+      font-size: 30px;
     }
 
     #overlay-container.layout-horizontal .node.center-goal {
-      margin: 0 15px;
+      width: 68px;
+      height: 68px;
+      border-width: 5px;
+      font-size: 40px;
+      margin: 0 22px;
     }
 
     @keyframes scaleXExpand {
@@ -78,7 +89,7 @@
       100% { opacity: 1; transform: scaleX(1); }
     }
 
-    /* === LAYOUT VERTICAL (PEGADO A LA DERECHA) === */
+    /* === LAYOUT VERTICAL (TAMAÑO TIKTOK/SHORTS) === */
     #overlay-container.layout-vertical {
       justify-content: flex-end;
       align-items: center;
@@ -116,7 +127,18 @@
       gap: 10px;
     }
 
+    #overlay-container.layout-vertical .node {
+      width: 34px;
+      height: 34px;
+      border-width: 2px;
+      font-size: 20px;
+    }
+
     #overlay-container.layout-vertical .node.center-goal {
+      width: 46px;
+      height: 46px;
+      border-width: 4px;
+      font-size: 28px;
       margin: 15px 0;
     }
 
@@ -150,15 +172,13 @@
 
     /* NODOS / NÚMEROS NORMALES (0 AL 7) */
     .node {
-      width: 34px;
-      height: 34px;
       border-radius: 50%;
-      border: 2px solid #ce3c35;
+      border-style: solid;
+      border-color: #ce3c35;
       background: rgba(0, 0, 0, 0.2);
       display: flex;
       justify-content: center;
       align-items: center;
-      font-size: 20px;
       color: #ffffff;
       font-weight: 900;
       text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9);
@@ -170,13 +190,11 @@
 
     /* NÚMERO 8 CENTRAL - DESCONECTADO */
     .node.center-goal {
-      width: 46px;
-      height: 46px;
       border-radius: 50%;
-      border: 4px solid #ce3c35;
+      border-style: solid;
+      border-color: #ce3c35;
       background: rgba(0, 0, 0, 0.2);
       color: #ffffff;
-      font-size: 28px;
       font-weight: 900;
       text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.9);
       display: flex;
@@ -206,8 +224,6 @@
       left: 0;
       margin: 0 !important;
       padding: 0 !important;
-      width: 42px;
-      height: 42px;
       border-radius: 50%;
       border: none !important;
       z-index: 10;
@@ -227,17 +243,12 @@
 
     #token-p1 {
       background-image: url('faccion1.png');
-      box-shadow: 0 0 12px rgba(239, 68, 68, 0.9);
+      box-shadow: 0 0 14px rgba(239, 68, 68, 0.9);
     }
 
     #token-p2 {
       background-image: url('faccion1.png');
-      box-shadow: 0 0 12px rgba(59, 130, 246, 0.9);
-    }
-
-    .p-token.is-goal {
-      width: 54px !important;
-      height: 54px !important;
+      box-shadow: 0 0 14px rgba(59, 130, 246, 0.9);
     }
 
     /* VISTA CONTROLADOR */
@@ -362,7 +373,6 @@
 
     const overlayContainer = document.getElementById('overlay-container');
 
-    // Configurar clase de layout en el contenedor
     if (layout === 'vertical') {
       overlayContainer.classList.add('layout-vertical');
     } else {
@@ -381,7 +391,6 @@
     if (isControl) {
       peer = new Peer();
       peer.on('open', () => {
-        // El teléfono busca conectar a ambas vistas (horizontal y vertical)
         connectToOverlay('obs-' + room + '-horizontal');
         connectToOverlay('obs-' + room + '-vertical');
       });
@@ -390,7 +399,7 @@
         const c = peer.connect(targetPeerId);
         c.on('open', () => {
           activeConnections.push(c);
-          c.send(state); // Envía el estado actual inmediatamente
+          c.send(state);
         });
         c.on('close', () => {
           activeConnections = activeConnections.filter(conn => conn !== c);
@@ -403,7 +412,6 @@
         });
       };
     } else {
-      // Asigna un ID único según el tipo de layout
       const overlayId = 'obs-' + room + '-' + layout;
       peer = new Peer(overlayId);
 
@@ -422,7 +430,6 @@
       });
     }
 
-    /* GESTIÓN DE BLOQUEO DE PANTALLA (WAKE LOCK API) */
     let wakeLock = null;
 
     async function initWakeLock() {
@@ -441,7 +448,6 @@
       }
     });
 
-    /* TOGGLE PANTALLA COMPLETA */
     function toggleFullScreen() {
       if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(() => {});
@@ -498,17 +504,22 @@
       const track = document.getElementById('track');
       let targetNode;
 
-      const tokenW = (value === 8) ? 54 : 42;
-      const tokenH = (value === 8) ? 54 : 42;
+      // Calcular dimensiones dinámicas según el layout
+      const isHoriz = layout === 'horizontal';
+      let tokenW = isHoriz ? 64 : 42;
+      let tokenH = isHoriz ? 64 : 42;
 
       if (value === 8) {
         targetNode = document.getElementById('goal-node');
-        token.classList.add('is-goal');
+        tokenW = isHoriz ? 78 : 54;
+        tokenH = isHoriz ? 78 : 54;
       } else {
         const container = document.getElementById(containerId);
         targetNode = container.querySelector(`[data-val="${value}"]`);
-        token.classList.remove('is-goal');
       }
+
+      token.style.width = tokenW + 'px';
+      token.style.height = tokenH + 'px';
 
       if (targetNode && track) {
         const targetX = targetNode.offsetLeft + (targetNode.offsetWidth / 2) - (tokenW / 2);
@@ -521,12 +532,14 @@
     function setInitialTokensAtCenter() {
       const goalNode = document.getElementById('goal-node');
       const track = document.getElementById('track');
+      const isHoriz = layout === 'horizontal';
+      const initRadius = isHoriz ? 32 : 21;
 
       ['token-p1', 'token-p2'].forEach((tokenId) => {
         const token = document.getElementById(tokenId);
         if (goalNode && track && token) {
-          const initialX = goalNode.offsetLeft + (goalNode.offsetWidth / 2) - 21;
-          const initialY = goalNode.offsetTop + (goalNode.offsetHeight / 2) - 21;
+          const initialX = goalNode.offsetLeft + (goalNode.offsetWidth / 2) - initRadius;
+          const initialY = goalNode.offsetTop + (goalNode.offsetHeight / 2) - initRadius;
 
           token.style.transition = 'none';
           token.classList.remove('visible');
